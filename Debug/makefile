@@ -44,7 +44,7 @@ all: webzavod1
 webzavod1: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "webzavod1" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o"webzavod1" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

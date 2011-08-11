@@ -7,11 +7,10 @@
 //============================================================================
 
 #include <iostream>
-using namespace std;
+#include "Params.h"
 
 int main(int argc, char *argv[]) {
-	//Разбор командной строки с помощью getopt
-	//вынесено в класс Params
-	cout << "start" << endl; // prints start
-	return 0;
+	webzavod::Params params;
+	bool res(params.Init(argc, argv));
+	return res;
 }
