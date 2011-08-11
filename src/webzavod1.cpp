@@ -8,9 +8,14 @@
 
 #include <iostream>
 #include "Params.h"
+#include "Program.h"
 
 int main(int argc, char *argv[]) {
 	webzavod::Params params;
-	bool res(params.Init(argc, argv));
-	return res;
+	params.Init(argc, argv);
+	webzavod::Program prog;
+	prog.Init(params);
+	prog.Work();
+	prog.Close();
+	return true;
 }

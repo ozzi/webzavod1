@@ -6,16 +6,19 @@
 CPP_SRCS += \
 ../src/Params.cpp \
 ../src/Params_test.cpp \
+../src/Program.cpp \
 ../src/webzavod1.cpp 
 
 OBJS += \
 ./src/Params.o \
 ./src/Params_test.o \
+./src/Program.o \
 ./src/webzavod1.o 
 
 CPP_DEPS += \
 ./src/Params.d \
 ./src/Params_test.d \
+./src/Program.d \
 ./src/webzavod1.d 
 
 

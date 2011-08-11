@@ -6,12 +6,42 @@
  */
 
 #include "Params.h"
+#include <stdlib.h>
 
 namespace webzavod {
 
+
+//надо оформить код с использованием исключений и с выводом хелпа в поток
 const bool Params::Init(int argc, char *argv[])
 {
-	return true;
+	bool res(false);
+	int longIndex;
+	for (int opt(getopt_long(argc, argv, optString, longOpts, &longIndex)); opt!=-1; opt=getopt_long(argc, argv, optString, longOpts, &longIndex))
+	{
+		switch (opt)
+		{
+		case 't':
+			threadsCount=atoi(optarg);
+			break;
+		case 'b':
+			bufferSize=atoi(optarg);
+			break;
+		case 'o':
+			outputFileName.assign(optarg);
+			break;
+		case 'h':
+			//<<usage();
+			break;
+		default:
+			break;
+		}
+	}
+	if (argc-optind==1)
+	{
+		url.assign(*(argv+optind));
+		res=true;
+	}
+	return res;
 }
 
 const char * Params::optString = "t:b:o:h";
