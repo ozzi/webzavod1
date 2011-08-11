@@ -4,21 +4,30 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/Barrier.cpp \
+../src/Filesystem.cpp \
+../src/Network.cpp \
 ../src/Params.cpp \
-../src/Params_test.cpp \
 ../src/Program.cpp \
+../src/Thread.cpp \
 ../src/webzavod1.cpp 
 
 OBJS += \
+./src/Barrier.o \
+./src/Filesystem.o \
+./src/Network.o \
 ./src/Params.o \
-./src/Params_test.o \
 ./src/Program.o \
+./src/Thread.o \
 ./src/webzavod1.o 
 
 CPP_DEPS += \
+./src/Barrier.d \
+./src/Filesystem.d \
+./src/Network.d \
 ./src/Params.d \
-./src/Params_test.d \
 ./src/Program.d \
+./src/Thread.d \
 ./src/webzavod1.d 
 
 

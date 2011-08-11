@@ -8,16 +8,25 @@
 #ifndef PROGRAM_H_
 #define PROGRAM_H_
 
+#include <vector>
 #include "Params.h"
+#include "Network.h"
+#include "Filesystem.h"
+#include "Barrier.h"
+#include "Thread.h"
+
 
 namespace webzavod {
 
-class Program {
+class Program
+{
+	Network net;
+	Filesystem file;
+	Barrier barrier;
+	std::vector<Thread> threads;
 public:
-	Program();
-	void Init(const Params & params);
+	Program(const Params & aParams);
 	void Work();
-	void Close();
 	virtual ~Program();
 };
 

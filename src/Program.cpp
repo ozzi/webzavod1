@@ -6,28 +6,25 @@
  */
 
 #include "Program.h"
+#include <algorithm>
 
 namespace webzavod {
 
-Program::Program() {
-	// TODO Auto-generated constructor stub
-
-}
-
-void Program::Init(const webzavod::Params & params)
+Program::Program(const Params & aParams) : net(aParams.GetUrl()), file(aParams.GetOutputFileName()), barrier(aParams.GetThreadsCount())
 {
+	threads.assign(aParams.GetThreadsCount(), Thread(net, file, barrier));
 }
 
 void Program::Work()
 {
-}
-
-void Program::Close()
-{
+	std::for_each(threads.begin(), threads.end(), std::mem_fun_ref(&Thread::Start));
+	barrier.Wait();
+	//запускаем потоки на выполнение, ждем окончания работы всех потоков
 }
 
 Program::~Program() {
 	// TODO Auto-generated destructor stub
 }
-
 }
+
+

@@ -21,8 +21,7 @@ class Params {
 	std::string outputFileName;
 	std::string url;
 public:
-	Params() {};
-	const bool Init(int argc, char *argv[]);
+	Params(int argc, char *argv[]);
 	const unsigned GetThreadsCount() const { return threadsCount; }
 	const unsigned GetBufferSize() const { return bufferSize; }
 	const std::string & GetOutputFileName() const { return outputFileName; }

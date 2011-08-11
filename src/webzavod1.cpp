@@ -9,13 +9,17 @@
 #include <iostream>
 #include "Params.h"
 #include "Program.h"
+#include "Error.h"
 
 int main(int argc, char *argv[]) {
-	webzavod::Params params;
-	params.Init(argc, argv);
-	webzavod::Program prog;
-	prog.Init(params);
-	prog.Work();
-	prog.Close();
-	return true;
+	try
+	{
+		webzavod::Program prog(webzavod::Params(argc, argv));
+		prog.Work();
+	}
+	catch (webzavod::Error &err)
+	{
+		std::cout<<err.Print();
+	}
+	return 0;
 }

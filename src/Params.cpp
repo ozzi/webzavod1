@@ -5,43 +5,41 @@
  *      Author: outz
  */
 
-#include "Params.h"
 #include <stdlib.h>
+#include "Params.h"
+#include "Error.h"
 
 namespace webzavod {
 
-
-//надо оформить код с использованием исключений и с выводом хелпа в поток
-const bool Params::Init(int argc, char *argv[])
+Params::Params(int argc, char *argv[])
 {
-	bool res(false);
 	int longIndex;
-	for (int opt(getopt_long(argc, argv, optString, longOpts, &longIndex)); opt!=-1; opt=getopt_long(argc, argv, optString, longOpts, &longIndex))
+	for (int opt(getopt_long(argc, argv, optString, longOpts, &longIndex)); opt!=-1; )
 	{
 		switch (opt)
 		{
 		case 't':
 			threadsCount=atoi(optarg);
+			if (!threadsCount)
+				throw ThreadsErr();
 			break;
 		case 'b':
 			bufferSize=atoi(optarg);
+			if (!bufferSize)
+				throw BufferErr();
 			break;
 		case 'o':
 			outputFileName.assign(optarg);
 			break;
 		case 'h':
-			//<<usage();
-			break;
 		default:
-			break;
+			throw UsageErr();
 		}
+		opt=getopt_long(argc, argv, optString, longOpts, &longIndex);
 	}
-	if (argc-optind==1)
-	{
-		url.assign(*(argv+optind));
-		res=true;
-	}
-	return res;
+	if (argc-optind!=1)
+		throw UsageErr();
+	url.assign(*(argv+optind));
 }
 
 const char * Params::optString = "t:b:o:h";
@@ -53,6 +51,5 @@ const option Params::longOpts[] = {
 	{ "help", no_argument, NULL, 'h' },
 	{ NULL, no_argument, NULL, 0 }
 };
-
 
 } /* namespace webzavod */
