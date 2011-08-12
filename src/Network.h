@@ -13,11 +13,18 @@
 
 namespace webzavod {
 
+class Source
+{
+public:
+	Source(const std::string & aUrl){}
+	~Source(){}
+};
+
 class Network {
 public:
-	Network(const std::string & aUrl);
+	Network(const Source& source);
 	virtual ~Network();
-	void Get(Buffer & buffer);
+	void Get(Buffer& buffer);
 	const bool Connected() const;
 	void Init();
 };

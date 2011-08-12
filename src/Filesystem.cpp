@@ -7,29 +7,26 @@
 
 #include "Filesystem.h"
 #include "Error.h"
+#include <sys/mman.h>
+
 
 namespace webzavod {
 
-OutputFile::OutputFile(const std::string & aName)
+MapFile::MapFile(int aFile, size_t aLength, off_t aOffset)
 {
-	pFile=fopen(aName.c_str(), "wb");
-	if (!pFile)
-		throw OpenFileErr();
+	void* map=mmap(NULL, aLength, PROT_WRITE, MAP_SHARED, aFile, aOffset);
+	if (map==MAP_FAILED)
+		throw MapFileErr();
 }
 
-OutputFile::~OutputFile()
+MapFile::~MapFile()
 {
-	if (pFile)
-		fclose(pFile);
+
 }
 
-void OutputFile::Put(const Buffer & buffer)
+void MapFile::Write(const Buffer & buffer)
 {
-	if (!pFile)
-		throw PutFileErr();
-	fseek(pFile, buffer.Pos(), SEEK_SET);
-	if (!fwrite(buffer.Data(), buffer.Size(), 1, pFile))
-		throw WriteFileErr();
+	throw WriteFileErr();
 }
 
 }

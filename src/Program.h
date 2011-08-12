@@ -11,19 +11,16 @@
 #include <vector>
 #include "Params.h"
 #include "Network.h"
-#include "Filesystem.h"
 #include "Barrier.h"
 #include "Thread.h"
-#include "CriticalSection.h"
 
 namespace webzavod {
 
 class Program
 {
-	OutputFile file;
-	Barrier barrier;
 	std::vector<Thread> threads;
-	CriticalSection section;
+	Barrier barrier;
+	int output;
 public:
 	Program(const Params & aParams);
 	void Work();

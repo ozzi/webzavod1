@@ -14,12 +14,11 @@
 
 namespace webzavod {
 
-class OutputFile {
-	FILE *pFile;
+class MapFile {
 public:
-	OutputFile(const std::string & aName);
-	virtual ~OutputFile();
-	void Put(const Buffer & buffer);
+	MapFile(int aFile, size_t aLength, off_t aOffset);
+	virtual ~MapFile();
+	void Write(const Buffer & buffer);
 };
 
 }

@@ -12,7 +12,6 @@
 #include "Filesystem.h"
 #include "Barrier.h"
 #include "Buffer.h"
-#include "CriticalSection.h"
 #include <pthread.h>
 
 namespace webzavod {
@@ -21,16 +20,15 @@ class Thread
 {
 	pthread_t id;
 	Network net;
-	OutputFile * pFile;
+	MapFile map;
 	Barrier * pBarrier;
 	Buffer buffer;
-	CriticalSection * pSection;
 
 	static void * EntryPoint(void * aParam);
 	void * Worker();
 public:
-	Thread(const Network & aNetwork, OutputFile * aFile, Barrier * aBarrier, const unsigned aBufferSize, CriticalSection * aSection)
-		: net(aNetwork), pFile(aFile), pBarrier(aBarrier), buffer(aBufferSize), pSection(aSection) {}
+	Thread(const Source & aSource, int aFile, Barrier * aBarrier, const unsigned aBufferSize)
+		: net(aSource), map(aFile, 0, 0), pBarrier(aBarrier), buffer(aBufferSize) {}
 	void Start();
 	virtual ~Thread();
 };

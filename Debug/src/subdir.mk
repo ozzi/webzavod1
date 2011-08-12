@@ -6,7 +6,6 @@
 CPP_SRCS += \
 ../src/Barrier.cpp \
 ../src/Buffer.cpp \
-../src/CriticalSection.cpp \
 ../src/Filesystem.cpp \
 ../src/Network.cpp \
 ../src/Params.cpp \
@@ -17,7 +16,6 @@ CPP_SRCS += \
 OBJS += \
 ./src/Barrier.o \
 ./src/Buffer.o \
-./src/CriticalSection.o \
 ./src/Filesystem.o \
 ./src/Network.o \
 ./src/Params.o \
@@ -28,7 +26,6 @@ OBJS += \
 CPP_DEPS += \
 ./src/Barrier.d \
 ./src/Buffer.d \
-./src/CriticalSection.d \
 ./src/Filesystem.d \
 ./src/Network.d \
 ./src/Params.d \

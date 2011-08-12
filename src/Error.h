@@ -41,19 +41,19 @@ public:
 	virtual std::string Print() { return "gethostbyname error: blablabla"; }
 };
 
-class OpenFileErr: public Error {
+class CreateFileErr: public Error {
 public:
-	virtual std::string Print() { return "open file error: blablabla"; }
-};
-
-class PutFileErr: public Error {
-public:
-	virtual std::string Print() { return "put file error: blablabla"; }
+	virtual std::string Print() { return "create file error: blablabla"; }
 };
 
 class WriteFileErr: public Error {
 public:
 	virtual std::string Print() { return "write file error: blablabla"; }
+};
+
+class MapFileErr: public Error {
+public:
+	virtual std::string Print() { return "map file error: blablabla"; }
 };
 
 }

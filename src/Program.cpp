@@ -7,12 +7,19 @@
 
 #include "Program.h"
 #include <algorithm>
+#include <fcntl.h>
+#include "Error.h"
+#include "Network.h"
 
 namespace webzavod {
 
-Program::Program(const Params & aParams) : file(aParams.GetOutputFileName()), barrier(aParams.GetThreadsCount())
+Program::Program(const Params & aParams) : barrier(aParams.GetThreadsCount())
 {
-	threads.assign(aParams.GetThreadsCount(), Thread(Network(aParams.GetUrl()), &file, &barrier, aParams.GetBufferSize(), &section));
+	output=open(aParams.GetOutputFileName().c_str(), O_WRONLY | O_CREAT | O_EXCL);
+	if (!output)
+		throw CreateFileErr();
+	threads.assign(aParams.GetThreadsCount(),
+		Thread(Source(aParams.GetUrl()), output, &barrier, aParams.GetBufferSize()));
 }
 
 void Program::Work()
@@ -21,7 +28,9 @@ void Program::Work()
 	barrier.Wait();
 }
 
-Program::~Program() {
+Program::~Program()
+{
+	close(output);
 }
 }
 

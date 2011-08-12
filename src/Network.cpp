@@ -11,11 +11,9 @@
 
 namespace webzavod {
 
-Network::Network(const std::string & aUrl)
+Network::Network(const Source& source)
 {//устанавливаем соединение с требуемым ресурсом, с помощью HEAD узнаем размер файла
-	struct hostent *he(gethostbyname(aUrl.c_str()));
-	if (!he)
-		throw GetHostByNameErr();
+	throw GetHostByNameErr();
 }
 
 void Network::Get(Buffer & buffer)

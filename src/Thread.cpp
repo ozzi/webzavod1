@@ -28,12 +28,7 @@ void* Thread::Worker()
 {
 	void * res(NULL);
 	for (net.Init(); net.Connected(); net.Get(buffer))
-	{
-		pSection->Enter();
-		pFile->Put(buffer);
-		pSection->Leave();
-
-	}
+		map.Write(buffer);
 	pBarrier->Dec();
 	std::cout<<"thread with id "<<id<<" finished\n";
 	return res;
