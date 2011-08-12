@@ -14,6 +14,14 @@ Barrier::~Barrier() {
 }
 
 void Barrier::Wait()
-{}
+{
+	while (threadCount)
+		;
+}
+
+void Barrier::Dec()
+{
+	--threadCount;
+}
 
 }

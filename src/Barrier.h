@@ -16,6 +16,7 @@ public:
 	Barrier(unsigned aThreadCount) : threadCount(aThreadCount) {}
 	void Wait();
 	virtual ~Barrier();
+	void Dec();
 };
 
 }

@@ -31,6 +31,11 @@ public:
 	virtual std::string Print() { return "buffer: blablabla"; }
 };
 
+class PthreadCreateErr : public Error {
+public:
+	virtual std::string Print() { return "pthread_create error: blablabla"; }
+};
+
 }
 
 #endif /* ERROR_H_ */

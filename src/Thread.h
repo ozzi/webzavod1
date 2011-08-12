@@ -11,12 +11,19 @@
 #include "Network.h"
 #include "Filesystem.h"
 #include "Barrier.h"
+#include <pthread.h>
 
 namespace webzavod {
 
 class Thread {
+	pthread_t id;
+	Network * pNetwork;
+	Filesystem * pFile;
+	Barrier * pBarrier;
+	static void * EntryPoint(void * aArg);
+	void Func();
 public:
-	Thread(const Network & aNetwork, const Filesystem & aFile, const Barrier & aBarrier);
+	Thread(Network * pNetwork, Filesystem * pFile, Barrier * pBarrier);
 	void Start();
 	virtual ~Thread();
 };

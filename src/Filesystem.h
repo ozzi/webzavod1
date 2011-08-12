@@ -9,6 +9,7 @@
 #define FILESYSTEM_H_
 
 #include <string>
+#include <iostream>
 
 namespace webzavod {
 
