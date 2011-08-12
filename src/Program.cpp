@@ -10,9 +10,9 @@
 
 namespace webzavod {
 
-Program::Program(const Params & aParams) : net(aParams.GetUrl()), file(aParams.GetOutputFileName()), barrier(aParams.GetThreadsCount())
+Program::Program(const Params & aParams) : file(aParams.GetOutputFileName()), barrier(aParams.GetThreadsCount())
 {
-	threads.assign(aParams.GetThreadsCount(), Thread(&net, &file, &barrier));
+	threads.assign(aParams.GetThreadsCount(), Thread(Network(aParams.GetUrl()), &file, &barrier, aParams.GetBufferSize(), &section));
 }
 
 void Program::Work()

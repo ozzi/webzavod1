@@ -6,16 +6,30 @@
  */
 
 #include "Filesystem.h"
+#include "Error.h"
 
 namespace webzavod {
 
-Filesystem::Filesystem(const std::string & aName) {
-	// TODO Auto-generated constructor stub
-
+OutputFile::OutputFile(const std::string & aName)
+{
+	pFile=fopen(aName.c_str(), "wb");
+	if (!pFile)
+		throw OpenFileErr();
 }
 
-Filesystem::~Filesystem() {
-	// TODO Auto-generated destructor stub
+OutputFile::~OutputFile()
+{
+	if (pFile)
+		fclose(pFile);
+}
+
+void OutputFile::Put(const Buffer & buffer)
+{
+	if (!pFile)
+		throw PutFileErr();
+	fseek(pFile, buffer.Pos(), SEEK_SET);
+	if (!fwrite(buffer.Data(), buffer.Size(), 1, pFile))
+		throw WriteFileErr();
 }
 
 }

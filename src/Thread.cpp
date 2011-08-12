@@ -11,8 +11,6 @@
 
 namespace webzavod
 {
-Thread::Thread(Network * aNetwork, Filesystem * aFile, Barrier * aBarrier) :
-		pNetwork(aNetwork), pFile(aFile), pBarrier(aBarrier) {}
 
 void Thread::Start()
 {
@@ -21,17 +19,24 @@ void Thread::Start()
 	std::cout<<"thread with id "<<id<<" started\n";
 }
 
-void * Thread::EntryPoint(void * aArg)
+void* Thread::EntryPoint(void * aParam)
 {
-	Thread * pThread(static_cast<Thread*>(aArg));
-	pThread->Func();
-	return NULL;
+	return static_cast<Thread*>(aParam)->Worker();
 }
 
-void Thread::Func()
+void* Thread::Worker()
 {
-	std::cout<<"thread with id "<<id<<" finished\n";
+	void * res(NULL);
+	for (net.Init(); net.Connected(); net.Get(buffer))
+	{
+		pSection->Enter();
+		pFile->Put(buffer);
+		pSection->Leave();
+
+	}
 	pBarrier->Dec();
+	std::cout<<"thread with id "<<id<<" finished\n";
+	return res;
 }
 
 Thread::~Thread()

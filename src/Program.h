@@ -14,16 +14,16 @@
 #include "Filesystem.h"
 #include "Barrier.h"
 #include "Thread.h"
-
+#include "CriticalSection.h"
 
 namespace webzavod {
 
 class Program
 {
-	Network net;
-	Filesystem file;
+	OutputFile file;
 	Barrier barrier;
 	std::vector<Thread> threads;
+	CriticalSection section;
 public:
 	Program(const Params & aParams);
 	void Work();

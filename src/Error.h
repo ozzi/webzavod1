@@ -36,6 +36,26 @@ public:
 	virtual std::string Print() { return "pthread_create error: blablabla"; }
 };
 
+class GetHostByNameErr: public Error {
+public:
+	virtual std::string Print() { return "gethostbyname error: blablabla"; }
+};
+
+class OpenFileErr: public Error {
+public:
+	virtual std::string Print() { return "open file error: blablabla"; }
+};
+
+class PutFileErr: public Error {
+public:
+	virtual std::string Print() { return "put file error: blablabla"; }
+};
+
+class WriteFileErr: public Error {
+public:
+	virtual std::string Print() { return "write file error: blablabla"; }
+};
+
 }
 
 #endif /* ERROR_H_ */

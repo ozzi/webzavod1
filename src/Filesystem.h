@@ -8,15 +8,18 @@
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 
+#include <stdio.h>
 #include <string>
-#include <iostream>
+#include "Buffer.h"
 
 namespace webzavod {
 
-class Filesystem {
+class OutputFile {
+	FILE *pFile;
 public:
-	Filesystem(const std::string & aName);
-	virtual ~Filesystem();
+	OutputFile(const std::string & aName);
+	virtual ~OutputFile();
+	void Put(const Buffer & buffer);
 };
 
 }
