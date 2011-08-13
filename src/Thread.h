@@ -8,10 +8,8 @@
 #ifndef THREAD_H_
 #define THREAD_H_
 
-#include "Network.h"
-#include "Filesystem.h"
+#include "Worker.h"
 #include "Barrier.h"
-#include "Buffer.h"
 #include <pthread.h>
 
 namespace webzavod {
@@ -19,16 +17,13 @@ namespace webzavod {
 class Thread
 {
 	pthread_t id;
-	Network net;
-	MapFile map;
-	Barrier * pBarrier;
-	Buffer buffer;
+	Worker worker;
+	Barrier* barrier;
 
+	void* Func();
 	static void * EntryPoint(void * aParam);
-	void * Worker();
 public:
-	Thread(const Source & aSource, int aFile, Barrier * aBarrier, const unsigned aBufferSize)
-		: net(aSource), map(aFile, 0, 0), pBarrier(aBarrier), buffer(aBufferSize) {}
+	Thread(const Worker& aWorker, Barrier* aBarrier) : worker (aWorker), barrier(aBarrier) {}
 	void Start();
 	virtual ~Thread();
 };

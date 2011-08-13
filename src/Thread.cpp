@@ -7,7 +7,6 @@
 
 #include "Thread.h"
 #include "Error.h"
-#include <iostream>
 
 namespace webzavod
 {
@@ -16,21 +15,17 @@ void Thread::Start()
 {
 	if (pthread_create(&id, NULL, EntryPoint, this))
 		throw PthreadCreateErr();
-	std::cout<<"thread with id "<<id<<" started\n";
 }
 
 void* Thread::EntryPoint(void * aParam)
 {
-	return static_cast<Thread*>(aParam)->Worker();
+	return static_cast<Thread*>(aParam)->Func();
 }
 
-void* Thread::Worker()
+void* Thread::Func()
 {
-	void * res(NULL);
-	for (net.Init(); net.Connected(); net.Get(buffer))
-		map.Write(buffer);
-	pBarrier->Dec();
-	std::cout<<"thread with id "<<id<<" finished\n";
+	void* res(worker.Main());
+	barrier->Dec();
 	return res;
 }
 

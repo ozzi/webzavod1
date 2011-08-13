@@ -11,6 +11,7 @@ CPP_SRCS += \
 ../src/Params.cpp \
 ../src/Program.cpp \
 ../src/Thread.cpp \
+../src/Worker.cpp \
 ../src/webzavod1.cpp 
 
 OBJS += \
@@ -21,6 +22,7 @@ OBJS += \
 ./src/Params.o \
 ./src/Program.o \
 ./src/Thread.o \
+./src/Worker.o \
 ./src/webzavod1.o 
 
 CPP_DEPS += \
@@ -31,6 +33,7 @@ CPP_DEPS += \
 ./src/Params.d \
 ./src/Program.d \
 ./src/Thread.d \
+./src/Worker.d \
 ./src/webzavod1.d 
 
 

@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "Params.h"
-#include "Network.h"
+#include "Worker.h"
 #include "Barrier.h"
 #include "Thread.h"
 
@@ -20,6 +20,7 @@ class Program
 {
 	std::vector<Thread> threads;
 	Barrier barrier;
+	Worker worker;
 	int output;
 public:
 	Program(const Params & aParams);

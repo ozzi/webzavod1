@@ -9,17 +9,21 @@
 #include <algorithm>
 #include <fcntl.h>
 #include "Error.h"
-#include "Network.h"
 
 namespace webzavod {
 
 Program::Program(const Params & aParams) : barrier(aParams.GetThreadsCount())
 {
+	long fileSize(0);
 	output=open(aParams.GetOutputFileName().c_str(), O_WRONLY | O_CREAT | O_EXCL);
 	if (!output)
 		throw CreateFileErr();
-	threads.assign(aParams.GetThreadsCount(),
-		Thread(Source(aParams.GetUrl()), output, &barrier, aParams.GetBufferSize()));
+	for (unsigned threadNumber(0); threadNumber<aParams.GetThreadsCount(); threadNumber++)
+	{
+		long offset();
+		long size();
+		threads.push_back(Thread(Worker(offset, size), &barrier));
+	}
 }
 
 void Program::Work()
