@@ -8,17 +8,18 @@
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 
-#include <stdio.h>
 #include <string>
+#include <fcntl.h>
 #include "Buffer.h"
 
 namespace webzavod {
 
-class MapFile {
+class OutputFile {
+	int file;
 public:
-	MapFile(int aFile, size_t aLength, off_t aOffset);
-	virtual ~MapFile();
-	void Write(const Buffer & buffer);
+	OutputFile(const std::string& aName);
+	virtual ~OutputFile();
+	void Write(const Buffer & aBuffer, unsigned long aPosition);
 };
 
 }

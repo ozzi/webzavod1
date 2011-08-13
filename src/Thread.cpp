@@ -19,14 +19,17 @@ void Thread::Start()
 
 void* Thread::EntryPoint(void * aParam)
 {
-	return static_cast<Thread*>(aParam)->Func();
+	Thread* thread(static_cast<Thread*>(aParam));
+	void* res(thread->Worker());
+	thread->barrier->Dec();
+	return res;
 }
 
-void* Thread::Func()
+void* Thread::Worker()
 {
-	void* res(worker.Main());
-	barrier->Dec();
-	return res;
+	Address* addr(NULL);//!!!!!!!!!!!!!!!
+	Http http(*addr);
+	return NULL;
 }
 
 Thread::~Thread()

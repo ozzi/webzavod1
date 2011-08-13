@@ -11,26 +11,40 @@
 
 namespace webzavod {
 
-Network::Network(const Source& source)
-{//устанавливаем соединение с требуемым ресурсом, с помощью HEAD узнаем размер файла
-	throw GetHostByNameErr();
-}
-
-void Network::Get(Buffer & buffer)
+Address::Address(const std::string& aUrl)
 {
-
+	size_t pos(aUrl.find('\''));
+	if (pos==std::string::npos)
+		throw WrongleUrlErr();
+	base.assign(aUrl, 0, pos);
+	resource.assign(aUrl, pos, aUrl.length()-pos);
 }
 
-const bool Network::Connected() const
-{
-	return false;
-}
-
-void Network::Init()
+HeadRequest::HeadRequest(const Address& addr)
 {
 }
 
-Network::~Network() {
+void Socket::Send(const Request& request)
+{
+}
+
+void Socket::Receive(Response& responce)
+{
+}
+
+const Response Http::Head()
+{
+	socket.Send(HeadRequest(addr));
+	Response meta;
+	socket.Receive(meta);
+	return meta;
+}
+
+InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
+{
+	Http http(addr);
+	Response metadata(http.Head());
+	fileSize=metadata.GetContentLength();
 }
 
 }

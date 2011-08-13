@@ -7,24 +7,20 @@
 
 #include "Filesystem.h"
 #include "Error.h"
-#include <sys/mman.h>
-
 
 namespace webzavod {
 
-MapFile::MapFile(int aFile, size_t aLength, off_t aOffset)
+OutputFile::OutputFile(const std::string& aName)
 {
-	void* map=mmap(NULL, aLength, PROT_WRITE, MAP_SHARED, aFile, aOffset);
-	if (map==MAP_FAILED)
-		throw MapFileErr();
+	file=open(aName.c_str(), O_WRONLY | O_CREAT | O_EXCL);
 }
 
-MapFile::~MapFile()
+OutputFile::~OutputFile()
 {
 
 }
 
-void MapFile::Write(const Buffer & buffer)
+void OutputFile::Write(const Buffer & aBuffer, unsigned long aPosition)
 {
 	throw WriteFileErr();
 }

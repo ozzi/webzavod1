@@ -10,7 +10,8 @@
 
 #include <vector>
 #include "Params.h"
-#include "Worker.h"
+#include "Network.h"
+#include "Filesystem.h"
 #include "Barrier.h"
 #include "Thread.h"
 
@@ -18,10 +19,11 @@ namespace webzavod {
 
 class Program
 {
-	std::vector<Thread> threads;
+	InputInfo input;
+	OutputFile output;
+	size_t threadsNumber;
 	Barrier barrier;
-	Worker worker;
-	int output;
+	std::vector<Thread> threads;
 public:
 	Program(const Params & aParams);
 	void Work();

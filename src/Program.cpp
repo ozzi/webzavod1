@@ -10,32 +10,38 @@
 #include <fcntl.h>
 #include "Error.h"
 
-namespace webzavod {
-
-Program::Program(const Params & aParams) : barrier(aParams.GetThreadsCount())
+namespace webzavod
 {
-	long fileSize(0);
-	output=open(aParams.GetOutputFileName().c_str(), O_WRONLY | O_CREAT | O_EXCL);
-	if (!output)
-		throw CreateFileErr();
-	for (unsigned threadNumber(0); threadNumber<aParams.GetThreadsCount(); threadNumber++)
+
+Program::Program(const Params & aParams)
+	: input(aParams.GetUrl()), output(aParams.GetOutput()),
+	  threadsNumber(input.GetFileSize() ? aParams.GetThreadsCount() : 1),
+	  barrier(threadsNumber), threads(threadsNumber, Thread())
+{}
+
+class ThreadStartFunc
+{
+	size_t fileSize, threadsNumber, threadsCount;
+public:
+	ThreadStartFunc(size_t aFileSize, size_t aThreadsNumber)
+		: fileSize(aFileSize), threadsNumber(aThreadsNumber), threadsCount(0) {}
+	void operator() (Thread& thread)
 	{
-		long offset();
-		long size();
-		threads.push_back(Thread(Worker(offset, size), &barrier));
+		thread.Start();
+		threadsCount++;
 	}
-}
+};
 
 void Program::Work()
 {
-	std::for_each(threads.begin(), threads.end(), std::mem_fun_ref(&Thread::Start));
+	std::for_each(threads.begin(), threads.end(), ThreadStartFunc(input.GetFileSize(), threadsNumber));
 	barrier.Wait();
 }
 
 Program::~Program()
 {
-	close(output);
 }
+
 }
 
 

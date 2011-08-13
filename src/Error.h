@@ -36,6 +36,11 @@ public:
 	virtual std::string Print() { return "pthread_create error: blablabla"; }
 };
 
+class WrongleUrlErr: public Error {
+public:
+	virtual std::string Print() { return "wrongle url error: blablabla"; }
+};
+
 class GetHostByNameErr: public Error {
 public:
 	virtual std::string Print() { return "gethostbyname error: blablabla"; }

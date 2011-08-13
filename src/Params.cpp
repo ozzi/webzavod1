@@ -11,7 +11,7 @@
 
 namespace webzavod {
 
-Params::Params(int argc, char *argv[])
+Params::Params(int argc, char *argv[]) : url(0), output(0)
 {
 	int longIndex;
 	for (int opt(getopt_long(argc, argv, optString, longOpts, &longIndex)); opt!=-1; )
@@ -29,7 +29,7 @@ Params::Params(int argc, char *argv[])
 				throw BufferErr();
 			break;
 		case 'o':
-			outputFileName.assign(optarg);
+			output.assign(optarg);
 			break;
 		case 'h':
 		default:
@@ -39,7 +39,11 @@ Params::Params(int argc, char *argv[])
 	}
 	if (argc-optind!=1)
 		throw UsageErr();
-	url.assign(*(argv+optind));
+	url.assign(argv[optind]);
+}
+
+Params::~Params()
+{
 }
 
 const char * Params::optString = "t:b:o:h";

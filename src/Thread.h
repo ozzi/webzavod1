@@ -8,8 +8,8 @@
 #ifndef THREAD_H_
 #define THREAD_H_
 
-#include "Worker.h"
 #include "Barrier.h"
+#include "Network.h"
 #include <pthread.h>
 
 namespace webzavod {
@@ -17,13 +17,12 @@ namespace webzavod {
 class Thread
 {
 	pthread_t id;
-	Worker worker;
 	Barrier* barrier;
 
-	void* Func();
-	static void * EntryPoint(void * aParam);
+	void* Worker();
+	static void* EntryPoint(void* aParam);
 public:
-	Thread(const Worker& aWorker, Barrier* aBarrier) : worker (aWorker), barrier(aBarrier) {}
+	Thread() {}
 	void Start();
 	virtual ~Thread();
 };
