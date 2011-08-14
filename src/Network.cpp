@@ -20,10 +20,6 @@ Address::Address(const std::string& aUrl)
 	resource.assign(aUrl, pos, aUrl.length()-pos);
 }
 
-HeadRequest::HeadRequest(const Address& addr)
-{
-}
-
 void Socket::Send(const Request& request)
 {
 }
@@ -32,19 +28,23 @@ void Socket::Receive(Response& responce)
 {
 }
 
-const Response Http::Head()
-{
-	socket.Send(HeadRequest(addr));
-	Response meta;
-	socket.Receive(meta);
-	return meta;
-}
-
 InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
 {
 	Http http(addr);
-	Response metadata(http.Head());
-	fileSize=metadata.GetContentLength();
+	http.SubmitRequest(HEADRequest(addr.GetResource()));
+	HEADResponse head;
+	http.ReceiveResponse(head);
+	fileSize=head.GetContentLength();
+}
+
+bool Http::SubmitRequest(const Request& request)
+{
+	return false;
+}
+
+bool Http::ReceiveResponse(Response& responce)
+{
+	return false;
 }
 
 }

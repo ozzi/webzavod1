@@ -11,8 +11,10 @@
 namespace webzavod
 {
 
-void Thread::Start()
+void Thread::Start(size_t aOffset, size_t aBytes)
 {
+	offset=aOffset;
+	bytes=aBytes;
 	if (pthread_create(&id, NULL, EntryPoint, this))
 		throw PthreadCreateErr();
 }
@@ -27,8 +29,11 @@ void* Thread::EntryPoint(void * aParam)
 
 void* Thread::Worker()
 {
-	Address* addr(NULL);//!!!!!!!!!!!!!!!
-	Http http(*addr);
+	Http http(addr);
+	http.SubmitRequest(PartialGETRequest(addr.GetResource(), offset, bytes));
+	PartialGETResponse res(bufferSize);
+	while (!http.ReceiveResponse(res))
+		output.Write(res.GetRange(), res.GetDataSize(), res.GetData());
 	return NULL;
 }
 

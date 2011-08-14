@@ -10,7 +10,6 @@
 
 #include <string>
 #include <fcntl.h>
-#include "Buffer.h"
 
 namespace webzavod {
 
@@ -19,7 +18,7 @@ class OutputFile {
 public:
 	OutputFile(const std::string& aName);
 	virtual ~OutputFile();
-	void Write(const Buffer & aBuffer, unsigned long aPosition);
+	void Write(size_t aPosition, size_t aBytes, const void* aData);
 };
 
 }

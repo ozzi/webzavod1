@@ -16,19 +16,19 @@ namespace webzavod
 Program::Program(const Params & aParams)
 	: input(aParams.GetUrl()), output(aParams.GetOutput()),
 	  threadsNumber(input.GetFileSize() ? aParams.GetThreadsCount() : 1),
-	  barrier(threadsNumber), threads(threadsNumber, Thread())
+	  barrier(threadsNumber), threads(threadsNumber, Thread(input.GetAddress(), output, &barrier, aParams.GetBufferSize()))
 {}
 
 class ThreadStartFunc
 {
-	size_t fileSize, threadsNumber, threadsCount;
+	size_t fileSize, threadsNumber, increment, counter;
 public:
 	ThreadStartFunc(size_t aFileSize, size_t aThreadsNumber)
-		: fileSize(aFileSize), threadsNumber(aThreadsNumber), threadsCount(0) {}
+		: fileSize(aFileSize), threadsNumber(aThreadsNumber), increment(fileSize/threadsNumber), counter(0) {}
 	void operator() (Thread& thread)
 	{
-		thread.Start();
-		threadsCount++;
+		thread.Start(counter*increment, counter!=threadsNumber-1 ? increment: fileSize-counter*increment);
+		counter++;
 	}
 };
 

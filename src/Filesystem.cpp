@@ -20,7 +20,7 @@ OutputFile::~OutputFile()
 
 }
 
-void OutputFile::Write(const Buffer & aBuffer, unsigned long aPosition)
+void OutputFile::Write(size_t aPosition, size_t aBytes, const void* aData)
 {
 	throw WriteFileErr();
 }
