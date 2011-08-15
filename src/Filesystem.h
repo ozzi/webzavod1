@@ -18,7 +18,7 @@ class OutputFile {
 public:
 	OutputFile(const std::string& aName);
 	virtual ~OutputFile();
-	void Write(size_t aPosition, size_t aBytes, const void* aData);
+	void Write(const void* aData, size_t aBytes, size_t aPosition);
 };
 
 }

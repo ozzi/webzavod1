@@ -30,15 +30,18 @@ void* Thread::EntryPoint(void * aParam)
 void* Thread::Worker()
 {
 	Http http(addr);
-	http.SubmitRequest(PartialGETRequest(addr.GetResource(), offset, bytes));
+	http.SubmitAllRequest(PartialGETRequest(addr.GetResource(), offset, bytes));
 	PartialGETResponse res(bufferSize);
 	while (!http.ReceiveResponse(res))
-		output.Write(res.GetRange(), res.GetDataSize(), res.GetData());
+		output.Write(res.GetData()+res.GetHeaderSize(), res.GetRecvSize()-res.GetHeaderSize(), res.GetResourceRange());
+	id=0;
 	return NULL;
 }
 
 Thread::~Thread()
 {
+	if (id)
+		pthread_cancel(id);
 }
 
 }

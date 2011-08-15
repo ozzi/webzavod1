@@ -13,16 +13,19 @@ namespace webzavod {
 OutputFile::OutputFile(const std::string& aName)
 {
 	file=open(aName.c_str(), O_WRONLY | O_CREAT | O_EXCL);
+	if (file==-1)
+		throw CreateFileErr();
 }
 
 OutputFile::~OutputFile()
 {
-
+	close(file);
 }
 
-void OutputFile::Write(size_t aPosition, size_t aBytes, const void* aData)
+void OutputFile::Write(const void* aData, size_t aBytes, size_t aPosition)
 {
-	throw WriteFileErr();
+	if (pwrite(file, aData, aBytes, aPosition)==-1)
+		throw WriteFileErr();
 }
 
 }

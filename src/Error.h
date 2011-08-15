@@ -46,6 +46,26 @@ public:
 	virtual std::string Print() { return "gethostbyname error: blablabla"; }
 };
 
+class InetAtonErr: public Error {
+public:
+	virtual std::string Print() { return "inet_aton error: blablabla"; }
+};
+
+class CreateSocketErr: public Error {
+public:
+	virtual std::string Print() { return "inet_aton error: blablabla"; }
+};
+
+class SendSocketErr: public Error {
+public:
+	virtual std::string Print() { return "send socket error: blablabla"; }
+};
+
+class RecvSocketErr: public Error {
+public:
+	virtual std::string Print() { return "recv socket error: blablabla"; }
+};
+
 class CreateFileErr: public Error {
 public:
 	virtual std::string Print() { return "create file error: blablabla"; }

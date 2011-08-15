@@ -10,11 +10,30 @@
 
 #include <string>
 #include <vector>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 namespace webzavod {
 
 class IP
-{};
+{
+	unsigned long addr;
+public:
+	IP(){}
+	IP(const std::string& aAddr)
+	{
+		SetAddr(aAddr);
+	}
+	~IP(){}
+	void SetAddr(const std::string& aAddr);
+	const in_addr Address() const
+	{
+		in_addr inaddr;
+		inaddr.s_addr=addr;
+		return inaddr;
+	}
+};
 
 class Address
 {
@@ -34,6 +53,8 @@ class Request
 public:
 	Request(){}
 	virtual ~Request(){}
+	const char* GetData() const { return 0; }
+	const size_t Size() const { return 0; }
 };
 
 class HEADRequest : public Request
@@ -59,49 +80,67 @@ public:
 	virtual ~PartialGETRequest(){}
 };
 
-
 class Response
 {
-public:
-	Response(){}
-	virtual ~Response(){}
-};
-
-class HEADResponse: public Response
-{
-	size_t length;
-public:
-	HEADResponse(){}
-	virtual ~HEADResponse(){}
-	const size_t GetContentLength() const { return length; }
-};
-
-class GETResponse: public Response
-{
+	std::vector<char> header;
 	std::vector<char> data;
+	size_t recvSize;
+
+	void GetHeader();
 public:
-	GETResponse(const size_t aBufferSize) : data(aBufferSize, 0) {}
+	Response(const size_t aBufferSize=4096) : data(aBufferSize, 0), recvSize(0) {}
+	virtual ~Response(){}
+	char* GetData() { return &data[0]; }
+	const size_t GetMaxSize() const { return data.size(); }
+	const size_t GetRecvSize() const { return recvSize; }
+	const size_t GetHeaderSize() const { return header.size(); }
+	void SetRecvSize(size_t bytes)
+	{
+		recvSize=bytes;
+		GetHeader();
+	}
+};
+
+class ResponseWithLength: public Response
+{
+	size_t contentLength;
+public:
+	ResponseWithLength(const size_t aBufferSize=4096) : Response(aBufferSize), contentLength(0) {}
+	const size_t GetContentLength() const { return contentLength; }
+};
+
+class HEADResponse: public ResponseWithLength
+{
+public:
+	HEADResponse(const size_t aBufferSize=4096) : ResponseWithLength(aBufferSize){}
+	virtual ~HEADResponse(){}
+};
+
+class GETResponse: public ResponseWithLength
+{
+public:
+	GETResponse(const size_t aBufferSize=4096) : ResponseWithLength(aBufferSize) {}
 	virtual ~GETResponse(){}
-	const void* GetData() const { return &data[0]; }
-	const size_t GetDataSize() const { return data.size(); }
 };
 
 class PartialGETResponse: public GETResponse
 {
 	size_t range;
 public:
-	PartialGETResponse(const size_t bufferSize) : GETResponse(bufferSize){}
+	PartialGETResponse(const size_t aBufferSize=4096) : GETResponse(aBufferSize){}
 	virtual ~PartialGETResponse(){}
-	const size_t GetRange() const { return range; }
+	const size_t GetResourceRange() const { return range; }
 };
 
 class Socket
 {
+	int id;
 public:
-	Socket(const IP& aIp){};
-	~Socket(){};
-	void Send(const Request& request);
-	void Receive(Response& responce);
+	Socket();
+	~Socket();
+	int Connect(const IP& ip);
+	int Send(const char* aData, const size_t aSize);
+	int Receive(char* aData, const size_t aSize);
 };
 
 class Http
@@ -109,9 +148,9 @@ class Http
 	std::string base;
 	Socket socket;
 public:
-	Http(const Address& aAddr) : base(aAddr.GetBase()), socket(aAddr.GetIp()) {}
-	bool SubmitRequest(const Request& request);
-	bool ReceiveResponse(Response& responce);
+	Http(const Address& aAddr) : base(aAddr.GetBase()) {}
+	void SubmitAllRequest(const Request& request);
+	bool ReceiveResponse(Response& response);
 };
 
 class InputInfo
