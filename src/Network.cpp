@@ -65,31 +65,44 @@ int Socket::Receive(char* aData, const size_t aSize)
 	return recv(id, aData, aSize, 0);
 }
 
-Request::Request()
+std::string HEADRequest::str("HEAD");
+const char* HEADRequest::GetData() const
 {
-
+	return str.c_str();
 }
 
-HEADRequest::HEADRequest(const std::string& aResource)
+const size_t HEADRequest::Size() const
 {
-
+	return str.size();
 }
 
-GETRequest::GETRequest(const std::string& aResource)
+std::string GETRequest::str;
+const char* GETRequest::GetData() const
 {
-
+	return str.c_str();
 }
 
-PartialGETRequest::PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes) : GETRequest(aResource)
+const size_t GETRequest::Size() const
 {
+	return str.size();
+}
 
+std::string PartialGETRequest::str;
+const char* PartialGETRequest::GetData() const
+{
+	return str.c_str();
+}
+
+const size_t PartialGETRequest::Size() const
+{
+	return str.size();
 }
 
 void Response::CalculateHeader()
 {
 	if (recvSize)
 	{
-		std::string nn("\n\n");
+		std::string nn("\r\n\r\n");
 		std::vector<char>::iterator posnn(std::search(buffer.begin(), buffer.begin()+recvSize, nn.begin(), nn.end()));
 		header.insert(header.end(), buffer.begin(), posnn);
 		if (posnn!=buffer.end())
@@ -117,7 +130,7 @@ const std::string Response::GetLabelValue(const std::string& label) const
 	std::vector<char>::const_iterator posLabel(std::search(header.begin(), header.end(), label.begin(), label.end()));
 	if (posLabel!=header.end())
 	{
-		std::string n("\n");
+		std::string n("\r\n");
 		std::vector<char>::const_iterator posn(std::search(posLabel+label.size(), header.end(), n.begin(), n.end()));
 		value.assign(posLabel+label.size(), posn);
 	}

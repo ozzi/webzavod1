@@ -50,34 +50,44 @@ public:
 
 class Request
 {
-protected:
-	std::string str;
+	std::string res;
 public:
-	Request();
+	Request(const std::string& aResource) : res(aResource) {}
 	virtual ~Request(){}
-	const char* GetData() const { return 0; }
-	const size_t Size() const { return 0; }
+	const std::string& GetResource() const { return res; }
+	virtual const char* GetData() const { return 0; }
+	virtual const size_t Size() const { return 0; }
 };
 
 class HEADRequest : public Request
 {
+	static std::string str;
 public:
-	HEADRequest(const std::string& aResource);
+	HEADRequest(const std::string& aResource) : Request(aResource) {}
 	virtual ~HEADRequest(){}
+	const char* GetData() const;
+	const size_t Size() const;
 };
 
 class GETRequest : public Request
 {
+	static std::string str;
 public:
-	GETRequest(const std::string& aResource);
+	GETRequest(const std::string& aResource) : Request(aResource) {}
 	virtual ~GETRequest(){}
+	const char* GetData() const;
+	const size_t Size() const;
 };
 
-class PartialGETRequest : public GETRequest
+class PartialGETRequest : public Request
 {
+	static std::string str;
 public:
-	PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes);
+	PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes)
+		: Request(aResource) {}
 	virtual ~PartialGETRequest(){}
+	const char* GetData() const;
+	const size_t Size() const;
 };
 
 class Response
