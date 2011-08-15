@@ -50,8 +50,10 @@ public:
 
 class Request
 {
+protected:
+	std::string str;
 public:
-	Request(){}
+	Request();
 	virtual ~Request(){}
 	const char* GetData() const { return 0; }
 	const size_t Size() const { return 0; }
@@ -59,24 +61,22 @@ public:
 
 class HEADRequest : public Request
 {
-	const std::string& resource;
 public:
-	HEADRequest(const std::string& aResource) : resource(aResource) {}
+	HEADRequest(const std::string& aResource);
 	virtual ~HEADRequest(){}
 };
 
 class GETRequest : public Request
 {
-	const std::string& resource;
 public:
-	GETRequest(const std::string& aResource) : resource(aResource) {}
+	GETRequest(const std::string& aResource);
 	virtual ~GETRequest(){}
 };
 
 class PartialGETRequest : public GETRequest
 {
 public:
-	PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes) : GETRequest(aResource) {}
+	PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes);
 	virtual ~PartialGETRequest(){}
 };
 
@@ -98,39 +98,7 @@ public:
 	const size_t GetBufferSize() const { return buffer.size(); }
 	const size_t GetDataSize() const { return data.size(); }
 	void SetRecvSize(size_t bytes);
-	void Init()
-	{
-		;
-	}
-};
-
-class ResponseWithLength: public Response
-{
-	size_t contentLength;
-public:
-	ResponseWithLength(const size_t aBufferSize=4096) : Response(aBufferSize), contentLength(0) {}
-	const size_t GetContentLength() const { return contentLength; }
-};
-
-class HEADResponse: public ResponseWithLength
-{
-public:
-	HEADResponse(const size_t aBufferSize=4096) : ResponseWithLength(aBufferSize){}
-	virtual ~HEADResponse(){}
-};
-
-class GETResponse: public ResponseWithLength
-{
-public:
-	GETResponse(const size_t aBufferSize=4096) : ResponseWithLength(aBufferSize) {}
-	virtual ~GETResponse(){}
-};
-
-class PartialGETResponse: public GETResponse
-{
-public:
-	PartialGETResponse(const size_t aBufferSize=4096) : GETResponse(aBufferSize){}
-	virtual ~PartialGETResponse(){}
+	const std::string GetLabelValue(const std::string& label) const;
 };
 
 class Socket

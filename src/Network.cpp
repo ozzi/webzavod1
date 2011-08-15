@@ -6,6 +6,7 @@
  */
 
 #include "Network.h"
+#include <algorithm>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include "Error.h"
@@ -64,36 +65,72 @@ int Socket::Receive(char* aData, const size_t aSize)
 	return recv(id, aData, aSize, 0);
 }
 
+Request::Request()
+{
+
+}
+
+HEADRequest::HEADRequest(const std::string& aResource)
+{
+
+}
+
+GETRequest::GETRequest(const std::string& aResource)
+{
+
+}
+
+PartialGETRequest::PartialGETRequest(const std::string& aResource, const size_t aRange , const size_t aBytes) : GETRequest(aResource)
+{
+
+}
+
 void Response::CalculateHeader()
 {
-	std::vector<char>::iterator it(buffer.end());
-	//ищем двойной перевод строки
-	header.insert(header.end(), buffer.begin(), it);
-	if (it!=buffer.end())
+	if (recvSize)
 	{
-		headerReceived=true;
-		data.assign(it+4,buffer.end());
+		std::string nn("\n\n");
+		std::vector<char>::iterator posnn(std::search(buffer.begin(), buffer.begin()+recvSize, nn.begin(), nn.end()));
+		header.insert(header.end(), buffer.begin(), posnn);
+		if (posnn!=buffer.end())
+		{
+			headerReceived=true;
+			data.assign(posnn+nn.size(),buffer.end());
+		}
 	}
+	else
+		headerReceived=true;
 }
 
 void Response::SetRecvSize(size_t bytes)
 {
 	recvSize=bytes;
 	if (headerReceived)
-	{
 		data.assign(buffer.begin(), buffer.begin()+recvSize);
-	}
 	else
 		CalculateHeader();
+}
+
+const std::string Response::GetLabelValue(const std::string& label) const
+{
+	std::string value;
+	std::vector<char>::const_iterator posLabel(std::search(header.begin(), header.end(), label.begin(), label.end()));
+	if (posLabel!=header.end())
+	{
+		std::string n("\n");
+		std::vector<char>::const_iterator posn(std::search(posLabel+label.size(), header.end(), n.begin(), n.end()));
+		value.assign(posLabel+label.size(), posn);
+	}
+	return value;
 }
 
 InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
 {
 	Http http(addr);
 	http.SubmitAllRequest(HEADRequest(addr.GetResource()));
-	HEADResponse head;
+	Response head;
 	http.ReceiveResponse(head);
-	fileSize=head.GetContentLength();
+	fileSize=atoi(head.GetLabelValue("Content-Length:").c_str());
 }
 
 void Http::SubmitAllRequest(const Request& request)
