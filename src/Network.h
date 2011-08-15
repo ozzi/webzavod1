@@ -82,22 +82,25 @@ public:
 
 class Response
 {
+	std::vector<char> buffer;
 	std::vector<char> header;
 	std::vector<char> data;
 	size_t recvSize;
+	bool headerReceived;
 
-	void GetHeader();
+	void CalculateHeader();
 public:
-	Response(const size_t aBufferSize=4096) : data(aBufferSize, 0), recvSize(0) {}
+	Response(const size_t aBufferSize=4096) : buffer(aBufferSize, 0), recvSize(0), headerReceived(false) {}
 	virtual ~Response(){}
+	char* GetBuffer() { return &buffer[0]; }
 	char* GetData() { return &data[0]; }
-	const size_t GetMaxSize() const { return data.size(); }
 	const size_t GetRecvSize() const { return recvSize; }
-	const size_t GetHeaderSize() const { return header.size(); }
-	void SetRecvSize(size_t bytes)
+	const size_t GetBufferSize() const { return buffer.size(); }
+	const size_t GetDataSize() const { return data.size(); }
+	void SetRecvSize(size_t bytes);
+	void Init()
 	{
-		recvSize=bytes;
-		GetHeader();
+		;
 	}
 };
 
@@ -125,11 +128,9 @@ public:
 
 class PartialGETResponse: public GETResponse
 {
-	size_t range;
 public:
 	PartialGETResponse(const size_t aBufferSize=4096) : GETResponse(aBufferSize){}
 	virtual ~PartialGETResponse(){}
-	const size_t GetResourceRange() const { return range; }
 };
 
 class Socket

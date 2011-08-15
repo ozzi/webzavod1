@@ -32,8 +32,12 @@ void* Thread::Worker()
 	Http http(addr);
 	http.SubmitAllRequest(PartialGETRequest(addr.GetResource(), offset, bytes));
 	PartialGETResponse res(bufferSize);
+	long position(offset);
 	while (!http.ReceiveResponse(res))
-		output.Write(res.GetData()+res.GetHeaderSize(), res.GetRecvSize()-res.GetHeaderSize(), res.GetResourceRange());
+	{
+		output.Write(res.GetData(), res.GetDataSize(), position);
+		position+=res.GetDataSize();
+	}
 	id=0;
 	return NULL;
 }

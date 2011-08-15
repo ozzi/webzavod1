@@ -64,9 +64,27 @@ int Socket::Receive(char* aData, const size_t aSize)
 	return recv(id, aData, aSize, 0);
 }
 
-void Response::GetHeader()
+void Response::CalculateHeader()
 {
-	//!!!!!!!!!!!
+	std::vector<char>::iterator it(buffer.end());
+	//ищем двойной перевод строки
+	header.insert(header.end(), buffer.begin(), it);
+	if (it!=buffer.end())
+	{
+		headerReceived=true;
+		data.assign(it+4,buffer.end());
+	}
+}
+
+void Response::SetRecvSize(size_t bytes)
+{
+	recvSize=bytes;
+	if (headerReceived)
+	{
+		data.assign(buffer.begin(), buffer.begin()+recvSize);
+	}
+	else
+		CalculateHeader();
 }
 
 InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
@@ -93,7 +111,7 @@ void Http::SubmitAllRequest(const Request& request)
 
 bool Http::ReceiveResponse(Response& response)
 {
-	int bytes(socket.Receive(response.GetData(), response.GetMaxSize()));
+	int bytes(socket.Receive(response.GetBuffer(), response.GetBufferSize()));
 	if (bytes==-1)
 		throw RecvSocketErr();
 	response.SetRecvSize(bytes);
