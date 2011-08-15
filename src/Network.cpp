@@ -39,6 +39,7 @@ InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
 
 bool Http::SubmitRequest(const Request& request)
 {
+	socket.Send(request);
 	return false;
 }
 
