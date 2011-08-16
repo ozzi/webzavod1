@@ -9,21 +9,32 @@
 #include <algorithm>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <iostream>
 #include "Error.h"
+#include <iostream>
 
 namespace webzavod {
 
-void IP::SetAddr(const std::string& aAddr)
+InetSockAddr::InetSockAddr(const std::string& aAddr, const std::string& aPort)
 {
-	//где-то здесь порылась собачка!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	hostent* he(gethostbyname(aAddr.c_str()));
-	if (!he)
-		throw GetHostByNameErr();
-	in_addr inaddr;
-	if (inet_aton(he->h_addr, &inaddr)==-1)
-		throw InetAtonErr();
-	addr=inaddr.s_addr;
+	SetIpv4Addr(aAddr, aPort);
+}
+
+const sockaddr_in& InetSockAddr::GetIpv4Addr() const
+{
+	return address;
+}
+
+void InetSockAddr::SetIpv4Addr(const std::string& aAddr, const std::string& aPort)
+{
+	addrinfo hint, *info;
+	std::fill((char*)&hint, (char*)&hint+sizeof(hint), 0);
+	hint.ai_family=AF_INET;
+	hint.ai_socktype=SOCK_STREAM;
+	hint.ai_protocol=IPPROTO_TCP;
+	int err(getaddrinfo(aAddr.c_str(), aPort.c_str(), &hint, &info));
+	if (err)
+		throw GetAddrInfoErr(err);
+	std::copy((char*)info->ai_addr, (char*)info->ai_addr+info->ai_addrlen, (char*)&address);
 }
 
 Address::Address(const std::string& aUrl)
@@ -38,7 +49,7 @@ Address::Address(const std::string& aUrl)
 		throw WrongleUrlErr();
 	base.assign(aUrl, start.size(), pos-start.size());
 	resource.assign(aUrl, pos, aUrl.length()-pos);
-	ip.SetAddr(base);
+	ip.SetIpv4Addr(base, "80");
 }
 
 Socket::Socket()
@@ -53,12 +64,9 @@ Socket::~Socket()
 	close(id);
 }
 
-int Socket::Connect(const IP& ip)
+int Socket::Connect(const InetSockAddr& ip)
 {
-	sockaddr_in addr;
-	addr.sin_addr=ip.Address();
-	addr.sin_family=AF_INET;
-	addr.sin_port=80;
+	sockaddr_in addr(ip.GetIpv4Addr());
 	return connect(id, (sockaddr*)&addr, sizeof(addr));
 }
 
@@ -77,12 +85,17 @@ void Response::CalculateHeader()
 	if (recvSize)
 	{
 		std::string nn("\r\n\r\n");
-		std::vector<char>::iterator posnn(std::search(buffer.begin(), buffer.begin()+recvSize, nn.begin(), nn.end()));
+		//delme
+		std::string tmp(buffer.begin(),buffer.end());
+		std::cout<<tmp;
+		//delme
+		std::vector<char>::iterator endrecv(buffer.begin()+recvSize);
+		std::vector<char>::iterator posnn(std::search(buffer.begin(), endrecv, nn.begin(), nn.end()));
 		header.insert(header.end(), buffer.begin(), posnn);
-		if (posnn!=buffer.end())
+		if (posnn!=endrecv)
 		{
 			headerReceived=true;
-			data.assign(posnn+nn.size(),buffer.end());
+			data.assign(posnn+nn.size(),endrecv);
 		}
 	}
 	else
@@ -111,13 +124,14 @@ const std::string Response::GetLabelValue(const std::string& label) const
 	return value;
 }
 
-InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
+Resource::Resource(const std::string& aUrl) : addr(aUrl)
 {
 	Http http(addr);
 	http.SubmitAllRequest(HEADRequest(addr.GetResource()));
 	Response head;
 	http.ReceiveResponse(head);
 	fileSize=atoi(head.GetLabelValue("Content-Length:").c_str());
+	;
 	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
 	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
 	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
@@ -134,9 +148,10 @@ void Http::SubmitAllRequest(const Request& request)
 	unsigned total(0);
 	int bytes(0);
 	socket.Connect(ip);
-	while (total<request.Get().size())
+	int n=request.Get().size();
+	while (total<n)
 	{
-		bytes=socket.Send(request.Get().c_str()+total, request.Get().size()-total);
+		bytes=socket.Send(request.Get().c_str()+total, n-total);
 		if (bytes==-1)
 			throw SendSocketErr();
 		total+=bytes;

@@ -18,7 +18,7 @@ public:
 
 class UsageErr : public Error {
 public:
-	virtual std::string Print() { return "usage: blablabla"; }
+	virtual std::string Print() { return "usage: webzavod1 options url"; }
 };
 
 class ThreadsErr : public Error {
@@ -41,14 +41,16 @@ public:
 	virtual std::string Print() { return "wrongle url error: blablabla"; }
 };
 
-class GetHostByNameErr: public Error {
+class GetAddrInfoErr: public Error {
+	int err;
 public:
-	virtual std::string Print() { return "gethostbyname error: blablabla"; }
+	GetAddrInfoErr(int aErr) : err(aErr) {}
+	virtual std::string Print() { return "GetAddrInfoErr"; }
 };
 
-class InetAtonErr: public Error {
+class SetAddrErr: public Error {
 public:
-	virtual std::string Print() { return "inet_aton error: blablabla"; }
+	virtual std::string Print() { return "set addr err"; }
 };
 
 class CreateSocketErr: public Error {

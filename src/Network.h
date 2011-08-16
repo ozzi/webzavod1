@@ -17,26 +17,18 @@
 
 namespace webzavod {
 
-class IP {
-	unsigned long addr;
+class InetSockAddr {
+	sockaddr_in address;
 public:
-	IP() {
-	}
-	IP(const std::string& aAddr) {
-		SetAddr(aAddr);
-	}
-	~IP() {
-	}
-	void SetAddr(const std::string& aAddr);
-	const in_addr Address() const {
-		in_addr inaddr;
-		inaddr.s_addr = addr;
-		return inaddr;
-	}
+	InetSockAddr(){}
+	InetSockAddr(const std::string& aAddr, const std::string& aPort);
+	~InetSockAddr(){}
+	void SetIpv4Addr(const std::string& aAddr, const std::string& aPort);
+	const sockaddr_in& GetIpv4Addr() const;
 };
 
 class Address {
-	IP ip;
+	InetSockAddr ip;
 	std::string base;
 	std::string resource;
 public:
@@ -50,7 +42,7 @@ public:
 	const std::string& GetResource() const {
 		return resource;
 	}
-	const IP& GetIp() const {
+	const InetSockAddr& GetIp() const {
 		return ip;
 	}
 };
@@ -62,7 +54,7 @@ protected:
 	const std::string _get(const char* method) const
 	{
 		std::stringstream get;
-		get << method << " " << uri << " HTTP/" << version << "\r\n";
+		get << method << " " << uri << " HTTP/" << version << "\n\n";
 		return get.str();
 	}
 public:
@@ -94,7 +86,7 @@ public:
 	virtual ~PartialGETRequest() {}
 	virtual const std::string Get() const {
 		std::stringstream get(GETRequest::Get());
-		get << "Range: bytes=" << beginRange << "-" << endRange << "\r\n";
+		get << "Range: bytes=" << beginRange << "-" << endRange << "\n\n";
 		return get.str();
 	}
 };
@@ -137,13 +129,13 @@ class Socket {
 public:
 	Socket();
 	~Socket();
-	int Connect(const IP& ip);
+	int Connect(const InetSockAddr& ip);
 	int Send(const char* aData, const size_t aSize);
 	int Receive(char* aData, const size_t aSize);
 };
 
 class Http {
-	IP ip;
+	InetSockAddr ip;
 	std::string base;
 	Socket socket;
 public:
@@ -152,17 +144,15 @@ public:
 	bool ReceiveResponse(Response& response);
 };
 
-class InputInfo {
+class Resource {
 	Address addr;
 	size_t fileSize;
+	bool acceptRanges;
 public:
-	InputInfo(const std::string& aAddr);
-	const size_t GetFileSize() const {
-		return fileSize;
-	}
-	const Address& GetAddress() const {
-		return addr;
-	}
+	Resource(const std::string& aAddr);
+	const size_t GetFileSize() const { return fileSize;	}
+	const Address& GetAddress() const { return addr; }
+	const bool AcceptRanges() const { return acceptRanges; }
 };
 
 }
