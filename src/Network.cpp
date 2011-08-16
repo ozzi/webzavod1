@@ -9,27 +9,34 @@
 #include <algorithm>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <iostream>
 #include "Error.h"
 
 namespace webzavod {
 
 void IP::SetAddr(const std::string& aAddr)
 {
+	//где-то здесь порылась собачка!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	hostent* he(gethostbyname(aAddr.c_str()));
 	if (!he)
 		throw GetHostByNameErr();
 	in_addr inaddr;
-	if (inet_aton(he->h_addr_list[0], &inaddr)==-1)
+	if (inet_aton(he->h_addr, &inaddr)==-1)
 		throw InetAtonErr();
 	addr=inaddr.s_addr;
 }
 
 Address::Address(const std::string& aUrl)
 {
-	size_t pos(aUrl.find('\''));
+	//исходим из того, что в строке адреса всегда есть http
+	std::string start("http://");
+	size_t pos(aUrl.find(start));
+	if (pos!=0)
+		throw WrongleUrlErr();
+	pos=aUrl.find('/',start.size());
 	if (pos==std::string::npos)
 		throw WrongleUrlErr();
-	base.assign(aUrl, 0, pos);
+	base.assign(aUrl, start.size(), pos-start.size());
 	resource.assign(aUrl, pos, aUrl.length()-pos);
 	ip.SetAddr(base);
 }
@@ -63,39 +70,6 @@ int Socket::Send(const char* aData, const size_t aSize)
 int Socket::Receive(char* aData, const size_t aSize)
 {
 	return recv(id, aData, aSize, 0);
-}
-
-std::string HEADRequest::str("HEAD");
-const char* HEADRequest::GetData() const
-{
-	return str.c_str();
-}
-
-const size_t HEADRequest::Size() const
-{
-	return str.size();
-}
-
-std::string GETRequest::str;
-const char* GETRequest::GetData() const
-{
-	return str.c_str();
-}
-
-const size_t GETRequest::Size() const
-{
-	return str.size();
-}
-
-std::string PartialGETRequest::str;
-const char* PartialGETRequest::GetData() const
-{
-	return str.c_str();
-}
-
-const size_t PartialGETRequest::Size() const
-{
-	return str.size();
 }
 
 void Response::CalculateHeader()
@@ -144,15 +118,25 @@ InputInfo::InputInfo(const std::string& aUrl) : addr(aUrl)
 	Response head;
 	http.ReceiveResponse(head);
 	fileSize=atoi(head.GetLabelValue("Content-Length:").c_str());
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
+	//location сюды инсертиться
 }
 
 void Http::SubmitAllRequest(const Request& request)
 {
 	unsigned total(0);
 	int bytes(0);
-	while (total<request.Size())
+	socket.Connect(ip);
+	while (total<request.Get().size())
 	{
-		bytes=socket.Send(request.GetData()+total, request.Size()-total);
+		bytes=socket.Send(request.Get().c_str()+total, request.Get().size()-total);
 		if (bytes==-1)
 			throw SendSocketErr();
 		total+=bytes;

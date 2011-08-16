@@ -11,7 +11,7 @@
 
 namespace webzavod {
 
-Params::Params(int argc, char *argv[]) : url(0), output(0)
+Params::Params(int argc, char *argv[])
 {
 	int longIndex;
 	for (int opt(getopt_long(argc, argv, optString, longOpts, &longIndex)); opt!=-1; )
