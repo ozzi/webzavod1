@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,101 +28,108 @@ public:
 	const sockaddr_in& GetIpv4Addr() const;
 };
 
-class Address {
-	InetSockAddr ip;
-	std::string base;
-	std::string resource;
+class UrlHttp {
+	InetSockAddr address;
+	std::string host;
+	std::string uri;
 public:
-	Address(const std::string& aUrl);
-	~Address() {
-	}
-	;
-	const std::string& GetBase() const {
-		return base;
-	}
-	const std::string& GetResource() const {
-		return resource;
-	}
-	const InetSockAddr& GetIp() const {
-		return ip;
-	}
+	UrlHttp(){}
+	UrlHttp(const std::string& aUrl);
+	~UrlHttp() {}
+	const std::string& GetHost() const { return host; }
+	const std::string& GetUri() const { return uri; }
+	const InetSockAddr& GetAddress() const { return address; }
 };
 
-class Request {
-	std::string uri;
+class RequestHttp {
 	std::string version;
+	std::string uri;
+	std::string host;
 protected:
 	const std::string _get(const char* method) const
 	{
 		std::stringstream get;
-		get << method << " " << uri << " HTTP/" << version << "\n\n";
+		get << method << " " << uri << " HTTP/" << version << "\n";
+		get << "Host: " << host << "\n";
+		get << "Accept: */*\n"
 		return get.str();
 	}
 public:
-	Request(const std::string& aUri) : uri(aUri), version("1.0") {}
-	virtual ~Request() {}
-	virtual const std::string Get() const { return _get("OPTIONS"); }
+	RequestHttp() : version("1.0") {}
+	RequestHttp(const UrlHttp& aUrl) : version("1.0"), uri(aUrl.GetUri()), host(aUrl.GetHost())  {}
+	virtual ~RequestHttp() {}
+	void Init(const UrlHttp& aUrl) { uri.assign(aUrl.GetUri()); host.assign(aUrl.GetHost()); }
+	virtual const std::string Get() const { return _get("OPTIONS")+"\n"; }
 };
 
-class HEADRequest: public Request {
+class HEADRequestHttp: public RequestHttp {
 public:
-	HEADRequest(const std::string& aUri) :
-		Request(aUri) {}
-	virtual ~HEADRequest() {}
-	virtual const std::string Get() const { return _get("HEAD"); }
+	HEADRequestHttp(){}
+	HEADRequestHttp(const UrlHttp& aUrl) : RequestHttp(aUrl) {}
+	virtual ~HEADRequestHttp() {}
+	virtual const std::string Get() const { return _get("HEAD")+"\n"; }
 };
 
-class GETRequest: public Request {
+class GETRequestHttp: public RequestHttp {
 public:
-	GETRequest(const std::string& aUri) : Request(aUri) {}
-	virtual ~GETRequest() {}
-	virtual const std::string Get() const { return _get("GET"); }
+	GETRequestHttp();
+	GETRequestHttp(const UrlHttp& aUrl) : RequestHttp(aUrl) {}
+	virtual ~GETRequestHttp() {}
+	virtual const std::string Get() const { return _get("GET")+"\n"; }
 };
 
-class PartialGETRequest: public GETRequest {
+class PartialGETRequestHttp: public GETRequestHttp {
 	size_t beginRange, endRange;
 public:
-	PartialGETRequest(const std::string& aUri, const size_t aRange, const size_t aBytes)
-		: GETRequest(aUri), beginRange(aRange), endRange(aRange + aBytes) {}
-	virtual ~PartialGETRequest() {}
-	virtual const std::string Get() const {
-		std::stringstream get(GETRequest::Get());
+	PartialGETRequestHttp(){}
+	PartialGETRequestHttp(const UrlHttp& aUrl, const size_t aRange, const size_t aBytes)
+		: GETRequestHttp(aUrl), beginRange(aRange), endRange(aRange + aBytes) {}
+	virtual ~PartialGETRequestHttp() {}
+	virtual const std::string Get() const
+	{
+		std::stringstream get(GETRequestHttp::Get());
 		get << "Range: bytes=" << beginRange << "-" << endRange << "\n\n";
 		return get.str();
 	}
 };
 
-class Response {
-	std::vector<char> buffer;
-	std::vector<char> header;
-	std::vector<char> data;
-	size_t recvSize;
-	bool headerReceived;
+class ResponseHttp {
+	std::vector<char> message;
+	std::string startLine;
+	std::string headersLine;
+	std::map<std::string, std::string> headers;
+	std::vector<char> msgBody;
+	size_t messageSize;
+	std::string version;
+	bool startLineProcessed;
+	bool headersLineProcessed;
+	bool recvAllMsgBody;
+	int statusCode;
+	UrlHttp location;
+	std::vector<char>::iterator beginParse;
+	void GetStartLine();
+	void GetHeadersLine();
+	void ParseHeaders();
+	void GetMessageBody();
 
-	void CalculateHeader();
 public:
-	Response(const size_t aBufferSize = 4096) :
-		buffer(aBufferSize, 0), recvSize(0), headerReceived(false) {
-	}
-	virtual ~Response() {
-	}
-	char* GetBuffer() {
-		return &buffer[0];
-	}
-	char* GetData() {
-		return &data[0];
-	}
-	const size_t GetRecvSize() const {
-		return recvSize;
-	}
-	const size_t GetBufferSize() const {
-		return buffer.size();
-	}
-	const size_t GetDataSize() const {
-		return data.size();
-	}
-	void SetRecvSize(size_t bytes);
-	const std::string GetLabelValue(const std::string& label) const;
+	ResponseHttp(const size_t aBufferSize = 4096) :
+		message(aBufferSize, 0), messageSize(0), startLineProcessed(false), headersLineProcessed(false) {}
+	virtual ~ResponseHttp() {}
+	void Init();
+	bool Redirection() { return (statusCode>=300 && statusCode<=307) ? true: false; }
+	bool Success() { return statusCode==200 ? true : false; }
+	const UrlHttp& Location() { return location; }
+	char* GetMessage() { return &message[0]; }
+	const size_t GetMsgSize() const { return messageSize; }
+	const size_t GetMaxMsgSize() const { return message.size(); }
+	char* GetMsgBody() { return &msgBody[0]; }
+	const size_t GetMsgBodySize() const { return msgBody.size(); }
+	const std::string GetHeaderValue(const std::string& label) const;
+	void SetRecvAllDataOn() { recvAllMsgBody=true; }
+	void SetRecvAllDataOff() { recvAllMsgBody=false; }
+	void ParseRecvMessage(size_t aBytes);
+	void Debug();
 };
 
 class Socket {
@@ -134,24 +142,28 @@ public:
 	int Receive(char* aData, const size_t aSize);
 };
 
-class Http {
+class SessionHttp {
 	InetSockAddr ip;
 	std::string base;
 	Socket socket;
 public:
-	Http(const Address& aAddr) : ip(aAddr.GetIp()), base(aAddr.GetBase()) {}
-	void SubmitAllRequest(const Request& request);
-	bool ReceiveResponse(Response& response);
+	SessionHttp(){}
+	SessionHttp(const UrlHttp& aAddr) : ip(aAddr.GetAddress()), base(aAddr.GetHost()) {}
+	void Init(const UrlHttp& aAddr) { ip=aAddr.GetAddress(); base.assign(aAddr.GetHost()); }
+	void SubmitAllRequest(const RequestHttp& request);
+	void ReceiveAllResponse(ResponseHttp& response);
+	bool SubmitRequest(const RequestHttp& request);
+	bool ReceiveResponse(ResponseHttp& response);
 };
 
-class Resource {
-	Address addr;
+class ResourceInfoSession {
+	UrlHttp addr;
 	size_t fileSize;
 	bool acceptRanges;
 public:
-	Resource(const std::string& aAddr);
+	ResourceInfoSession(const std::string& aAddr);
 	const size_t GetFileSize() const { return fileSize;	}
-	const Address& GetAddress() const { return addr; }
+	const UrlHttp& GetAddress() const { return addr; }
 	const bool AcceptRanges() const { return acceptRanges; }
 };
 

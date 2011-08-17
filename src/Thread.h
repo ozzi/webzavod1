@@ -18,7 +18,7 @@ namespace webzavod {
 class Thread
 {
 	pthread_t id;
-	Address addr;
+	UrlHttp addr;
 	OutputFile output;
 	Barrier* barrier;
 	size_t bufferSize;
@@ -28,7 +28,7 @@ class Thread
 	void* Worker();
 	static void* EntryPoint(void* aParam);
 public:
-	Thread(const Address& aAddr, const OutputFile& aFile, Barrier* aBarrier, size_t aBlockSize)
+	Thread(const UrlHttp& aAddr, const OutputFile& aFile, Barrier* aBarrier, size_t aBlockSize)
 		: id(0), addr(aAddr), output(aFile), barrier(aBarrier), bufferSize(aBlockSize), offset(0), bytes(0) {}
 	void Start(size_t aOffset, size_t aBytes);
 	virtual ~Thread();

@@ -37,7 +37,7 @@ void InetSockAddr::SetIpv4Addr(const std::string& aAddr, const std::string& aPor
 	std::copy((char*)info->ai_addr, (char*)info->ai_addr+info->ai_addrlen, (char*)&address);
 }
 
-Address::Address(const std::string& aUrl)
+UrlHttp::UrlHttp(const std::string& aUrl)
 {
 	//исходим из того, что в строке адреса всегда есть http
 	std::string start("http://");
@@ -47,9 +47,9 @@ Address::Address(const std::string& aUrl)
 	pos=aUrl.find('/',start.size());
 	if (pos==std::string::npos)
 		throw WrongleUrlErr();
-	base.assign(aUrl, start.size(), pos-start.size());
-	resource.assign(aUrl, pos, aUrl.length()-pos);
-	ip.SetIpv4Addr(base, "80");
+	host.assign(aUrl, start.size(), pos-start.size());
+	uri.assign(aUrl, pos, aUrl.length()-pos);
+	address.SetIpv4Addr(host, "80");
 }
 
 Socket::Socket()
@@ -80,70 +80,115 @@ int Socket::Receive(char* aData, const size_t aSize)
 	return recv(id, aData, aSize, 0);
 }
 
-void Response::CalculateHeader()
+void ResponseHttp::Init()
 {
-	if (recvSize)
+	startLine.clear();
+	headersLine.clear();
+	headers.clear();
+	msgBody.clear();
+	messageSize=0;
+	startLineProcessed=false;
+	headersLineProcessed=false;
+	statusCode=0;
+}
+
+void ResponseHttp::ParseRecvMessage(size_t aBytes)
+{
+	messageSize=aBytes;
+	beginParse=message.begin();
+	if (!startLineProcessed)
+		GetStartLine();
+	if (!headersLineProcessed)
+		GetHeadersLine();
+	GetMessageBody();
+}
+
+
+void ResponseHttp::GetStartLine()
+{
+	std::string rn("\r\n");
+	std::vector<char>::iterator start_line_end(std::search(message.begin(), message.begin()+messageSize, rn.begin(), rn.end()));
+	startLine.assign(message.begin(),start_line_end);
+	beginParse=start_line_end+rn.size();
+	std::string http_str("HTTP/");
+	if (startLine.find(http_str))
+		return;//ошибочка вышла
+	version.assign(startLine, http_str.size(), 3);
+	std::string status_code_str(startLine, http_str.size()+4, 3);
+	statusCode=atoi(status_code_str.c_str());
+	startLine.clear();
+	startLineProcessed=true;
+}
+
+void ResponseHttp::GetHeadersLine()
+{
+	std::string rnrn("\r\n\r\n");
+	std::vector<char>::iterator message_end(message.begin()+messageSize);
+	std::vector<char>::iterator headers_line_end(std::search(beginParse, message_end, rnrn.begin(), rnrn.end()));
+	headersLine.insert(headersLine.end(), beginParse, headers_line_end);
+	if (headers_line_end!=message_end)
 	{
-		std::string nn("\r\n\r\n");
-		//delme
-		std::string tmp(buffer.begin(),buffer.end());
-		std::cout<<tmp;
-		//delme
-		std::vector<char>::iterator endrecv(buffer.begin()+recvSize);
-		std::vector<char>::iterator posnn(std::search(buffer.begin(), endrecv, nn.begin(), nn.end()));
-		header.insert(header.end(), buffer.begin(), posnn);
-		if (posnn!=endrecv)
-		{
-			headerReceived=true;
-			data.assign(posnn+nn.size(),endrecv);
-		}
+		headersLineProcessed=true;
+		beginParse=headers_line_end+rnrn.size();
+		ParseHeaders();
 	}
-	else
-		headerReceived=true;
 }
 
-void Response::SetRecvSize(size_t bytes)
+void ResponseHttp::ParseHeaders()
 {
-	recvSize=bytes;
-	if (headerReceived)
-		data.assign(buffer.begin(), buffer.begin()+recvSize);
-	else
-		CalculateHeader();
-}
-
-const std::string Response::GetLabelValue(const std::string& label) const
-{
+	std::string rn("\r\n");
+	std::string separator(": ");
+	std::string name;
 	std::string value;
-	std::vector<char>::const_iterator posLabel(std::search(header.begin(), header.end(), label.begin(), label.end()));
-	if (posLabel!=header.end())
+	size_t begin_name(0), begin_value(0);
+	do
 	{
-		std::string n("\r\n");
-		std::vector<char>::const_iterator posn(std::search(posLabel+label.size(), header.end(), n.begin(), n.end()));
-		value.assign(posLabel+label.size(), posn);
-	}
-	return value;
+		begin_value=headersLine.find(separator, begin_name);
+		if (begin_value==std::string::npos)
+			break;//invalid header
+		name.assign(headersLine, begin_name, begin_value-begin_name);
+		begin_value+=separator.size();
+		begin_name=headersLine.find(rn, begin_value);
+		value.assign(headersLine, begin_value, begin_name-begin_value);
+		if (begin_name!=std::string::npos)
+			begin_name+=rn.size();
+		headers[name]=value;
+	} while (begin_name!=std::string::npos);
+	headersLineProcessed=true;
+	headersLine.clear();
 }
 
-Resource::Resource(const std::string& aUrl) : addr(aUrl)
+void ResponseHttp::GetMessageBody()
 {
-	Http http(addr);
-	http.SubmitAllRequest(HEADRequest(addr.GetResource()));
-	Response head;
-	http.ReceiveResponse(head);
-	fileSize=atoi(head.GetLabelValue("Content-Length:").c_str());
-	;
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//!!!!!!!!!!!!!!!!! очень важно обработать здеся ответы сервера все возможные
-	//location сюды инсертиться
+	if (recvAllMsgBody)
+		msgBody.insert(msgBody.end(), beginParse, message.begin()+messageSize);
+	else
+		msgBody.assign(beginParse, message.begin()+messageSize);
 }
 
-void Http::SubmitAllRequest(const Request& request)
+const std::string ResponseHttp::GetHeaderValue(const std::string& aName) const
+{
+	std::string res;
+	std::map<std::string, std::string>::const_iterator it(headers.find(aName));
+	if (it!=headers.end())
+		res=it->second;
+	return res;
+}
+
+void ResponseHttp::Debug()
+{
+	std::stringstream ss;
+	ss<<"HTTP/"<<version<<" "<<statusCode<<std::endl;
+	std::map<std::string,std::string>::iterator it(headers.begin());
+	while (it!=headers.end())
+	{
+		ss<<it->first<<": "<<it->second<<std::endl;
+		it++;
+	}
+	std::cout<<ss.str();
+}
+
+void SessionHttp::SubmitAllRequest(const RequestHttp& request)
 {
 	unsigned total(0);
 	int bytes(0);
@@ -158,13 +203,48 @@ void Http::SubmitAllRequest(const Request& request)
 	}
 }
 
-bool Http::ReceiveResponse(Response& response)
+void SessionHttp::ReceiveAllResponse(ResponseHttp& response)
 {
-	int bytes(socket.Receive(response.GetBuffer(), response.GetBufferSize()));
+	response.SetRecvAllDataOn();
+	int bytes;
+	do {
+		bytes=socket.Receive(response.GetMessage(), response.GetMaxMsgSize());
+		if (bytes==-1)
+			throw RecvSocketErr();
+		response.ParseRecvMessage(bytes);
+	} while (bytes);
+}
+
+bool SessionHttp::ReceiveResponse(ResponseHttp& response)
+{
+	response.SetRecvAllDataOff();
+	int bytes(socket.Receive(response.GetMessage(), response.GetMaxMsgSize()));
 	if (bytes==-1)
 		throw RecvSocketErr();
-	response.SetRecvSize(bytes);
+	response.ParseRecvMessage(bytes);
 	return bytes==0;
+}
+
+ResourceInfoSession::ResourceInfoSession(const std::string& aUrl) : addr(aUrl)
+{
+	SessionHttp http;
+	HEADRequestHttp head_request;
+	ResponseHttp head_response;
+	do
+	{
+		http.Init(addr);
+		head_request.Init(addr);
+		http.SubmitAllRequest(head_request);
+		head_response.Init();
+		http.ReceiveAllResponse(head_response);
+		head_response.Debug();
+		if (head_response.Redirection())
+			addr=head_response.Location();
+	} while (head_response.Redirection());
+	if (!head_response.Success())
+		throw ResourceInfoErr();
+	std::string str_size(head_response.GetHeaderValue("Content-Length"));
+	fileSize=atoi(str_size.c_str());
 }
 
 }

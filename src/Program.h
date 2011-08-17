@@ -19,7 +19,7 @@ namespace webzavod {
 
 class Program
 {
-	Resource input;
+	ResourceInfoSession input;
 	OutputFile output;
 	size_t threadsNumber;
 	Barrier barrier;

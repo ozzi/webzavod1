@@ -41,6 +41,11 @@ public:
 	virtual std::string Print() { return "wrongle url error: blablabla"; }
 };
 
+class ResourceInfoErr: public Error {
+public:
+	virtual std::string Print() { return "ResourceInfo"; }
+};
+
 class GetAddrInfoErr: public Error {
 	int err;
 public:

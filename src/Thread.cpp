@@ -29,14 +29,14 @@ void* Thread::EntryPoint(void * aParam)
 
 void* Thread::Worker()
 {
-	Http http(addr);
-	http.SubmitAllRequest(PartialGETRequest(addr.GetResource(), offset, bytes));
-	Response res(bufferSize);
+	SessionHttp http(addr);
+	http.SubmitAllRequest(PartialGETRequestHttp(addr, offset, bytes));
+	ResponseHttp res(bufferSize);
 	long position(offset);
 	while (!http.ReceiveResponse(res))
 	{
-		output.Write(res.GetData(), res.GetDataSize(), position);
-		position+=res.GetDataSize();
+		output.Write(res.GetMsgBody(), res.GetMsgBodySize(), position);
+		position+=res.GetMsgBodySize();
 	}
 	id=0;
 	return NULL;
