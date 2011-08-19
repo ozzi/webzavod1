@@ -1,0 +1,2 @@
+usage: webzavod1 -t NumberOfThreads URL
+for help: webzavod1 --help
