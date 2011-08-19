@@ -1,9 +1,8 @@
-/*
- * Params.h
- *
- *  Created on: 10.08.2011
- *      Author: outz
- */
+//============================================================================
+// Author      : Alexander Zhukov
+// Version     : 0.0a
+// Copyright   : MIT license
+//============================================================================
 
 #ifndef PARAMS_H_
 #define PARAMS_H_
@@ -13,18 +12,19 @@
 namespace webzavod {
 
 class Params {
+	//класс, обрабатывающий командную строку и извлекающий из нее значения входных параметров
 	static const char *optString;
 	static const option longOpts[];
 
 	std::string url;
 	std::string output;
 	unsigned threadsCount;
-	unsigned bufferSize;
+	unsigned refresh;
 
 public:
 	Params(int argc, char *argv[]);
 	const unsigned GetThreadsCount() const { return threadsCount; }
-	const unsigned GetBufferSize() const { return bufferSize; }
+	const unsigned GetRefresh() const { return refresh; }
 	const std::string& GetOutput() const { return output; }
 	const std::string& GetUrl() const { return url; }
 	virtual ~Params();

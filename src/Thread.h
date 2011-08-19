@@ -1,9 +1,8 @@
-/*
- * Thread.h
- *
- *  Created on: 11.08.2011
- *      Author: outz
- */
+//============================================================================
+// Author      : Alexander Zhukov
+// Version     : 0.0a
+// Copyright   : MIT license
+//============================================================================
 
 #ifndef THREAD_H_
 #define THREAD_H_
@@ -17,21 +16,32 @@ namespace webzavod {
 
 class Thread
 {
+	//класс реализует потоковую загрузку
 	pthread_t id;
 	UrlHttp addr;
-	OutputFile output;
+	OutputFile* output;
 	Barrier* barrier;
-	size_t bufferSize;
-	size_t offset;
-	size_t bytes;
+	size_t offset;//начиная с этого смещения на сервере поток загрузит указанное количество байт
+	size_t total;//количество байт, которое необходимо загрузить
+	size_t received;//содержит текущее количество загруженных байт
+	bool error;//поток столкнулся с ошибкой во время работы
 
-	void* Worker();
-	static void* EntryPoint(void* aParam);
+	void* Worker();//тело потока, здесь происходит закачка файла
+	static void* EntryPoint(void* aParam);//точка входа для pthread_create
 public:
-	Thread(const UrlHttp& aAddr, const OutputFile& aFile, Barrier* aBarrier, size_t aBlockSize)
-		: id(0), addr(aAddr), output(aFile), barrier(aBarrier), bufferSize(aBlockSize), offset(0), bytes(0) {}
-	void Start(size_t aOffset, size_t aBytes);
+	Thread(const UrlHttp& aAddr, OutputFile* aFile, Barrier* aBarrier)
+		: id(0),
+		  addr(aAddr),
+		  output(aFile),
+		  barrier(aBarrier),
+		  offset(0),
+		  total(0),
+		  received(0),
+		  error(false) {}
 	virtual ~Thread();
+	void Start(size_t aOffset, size_t aBytes);
+	const size_t GetBytesReceived() const { return received; }
+	const bool GetErrorState() const { return error; }
 };
 
 }

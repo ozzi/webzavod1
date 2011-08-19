@@ -1,15 +1,13 @@
 //============================================================================
-// Name        : webzavod1.cpp
 // Author      : Alexander Zhukov
-// Version     :
+// Version     : 0.0a
 // Copyright   : MIT license
-// Description : Hello World in C++, Ansi-style
 //============================================================================
 
-#include <iostream>
 #include "Params.h"
 #include "Program.h"
 #include "Error.h"
+#include <iostream>
 
 int main(int argc, char *argv[]) {
 	try

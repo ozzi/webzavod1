@@ -1,16 +1,15 @@
-/*
- * Network.cpp
- *
- *  Created on: 11.08.2011
- *      Author: outz
- */
+//============================================================================
+// Author      : Alexander Zhukov
+// Version     : 0.0a
+// Copyright   : MIT license
+//============================================================================
 
 #include "Network.h"
+#include "Error.h"
 #include <algorithm>
+#include <iostream>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "Error.h"
-#include <iostream>
 
 namespace webzavod {
 
@@ -24,6 +23,13 @@ const sockaddr_in& InetSockAddr::GetIpv4Addr() const
 	return address;
 }
 
+const std::string InetSockAddr::GetIpv4AddrStr() const
+{
+	char buf[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &address, buf, INET_ADDRSTRLEN);
+	return buf;
+}
+
 void InetSockAddr::SetIpv4Addr(const std::string& aAddr, const std::string& aPort)
 {
 	addrinfo hint, *info;
@@ -31,13 +37,20 @@ void InetSockAddr::SetIpv4Addr(const std::string& aAddr, const std::string& aPor
 	hint.ai_family=AF_INET;
 	hint.ai_socktype=SOCK_STREAM;
 	hint.ai_protocol=IPPROTO_TCP;
+	hint.ai_flags=AI_PASSIVE;
 	int err(getaddrinfo(aAddr.c_str(), aPort.c_str(), &hint, &info));
 	if (err)
 		throw GetAddrInfoErr(err);
 	std::copy((char*)info->ai_addr, (char*)info->ai_addr+info->ai_addrlen, (char*)&address);
+	freeaddrinfo(info);
 }
 
 UrlHttp::UrlHttp(const std::string& aUrl)
+{
+	Set(aUrl);
+}
+
+void UrlHttp::Set(const std::string& aUrl)
 {
 	//исходим из того, что в строке адреса всегда есть http
 	std::string start("http://");
@@ -54,20 +67,22 @@ UrlHttp::UrlHttp(const std::string& aUrl)
 
 Socket::Socket()
 {
-	id=socket(AF_INET, SOCK_STREAM, 0);
-	if (id==-1)
-		throw CreateSocketErr();
+	id=0;
 }
 
 Socket::~Socket()
 {
-	close(id);
+	Close();
 }
 
-int Socket::Connect(const InetSockAddr& ip)
+void Socket::Connect(const InetSockAddr& ip)
 {
+	id=socket(AF_INET, SOCK_STREAM, 0);
+	if (id==-1)
+		throw CreateSocketErr();
 	sockaddr_in addr(ip.GetIpv4Addr());
-	return connect(id, (sockaddr*)&addr, sizeof(addr));
+	if (connect(id, (sockaddr*)&addr, sizeof(addr))!=0)
+		throw SocketConnectErr();
 }
 
 int Socket::Send(const char* aData, const size_t aSize)
@@ -78,6 +93,11 @@ int Socket::Send(const char* aData, const size_t aSize)
 int Socket::Receive(char* aData, const size_t aSize)
 {
 	return recv(id, aData, aSize, 0);
+}
+
+void Socket::Close()
+{
+	close(id);
 }
 
 void ResponseHttp::Init()
@@ -97,14 +117,14 @@ void ResponseHttp::ParseRecvMessage(size_t aBytes)
 	messageSize=aBytes;
 	beginParse=message.begin();
 	if (!startLineProcessed)
-		GetStartLine();
+		ParseStartLine();
 	if (!headersLineProcessed)
-		GetHeadersLine();
-	GetMessageBody();
+		ParseHeadersLine();
+	ParseMessageBody();
 }
 
 
-void ResponseHttp::GetStartLine()
+void ResponseHttp::ParseStartLine()
 {
 	std::string rn("\r\n");
 	std::vector<char>::iterator start_line_end(std::search(message.begin(), message.begin()+messageSize, rn.begin(), rn.end()));
@@ -112,15 +132,14 @@ void ResponseHttp::GetStartLine()
 	beginParse=start_line_end+rn.size();
 	std::string http_str("HTTP/");
 	if (startLine.find(http_str))
-		return;//ошибочка вышла
+		throw UnsuccessfulServerResponseErr(startLine);
 	version.assign(startLine, http_str.size(), 3);
-	std::string status_code_str(startLine, http_str.size()+4, 3);
-	statusCode=atoi(status_code_str.c_str());
-	startLine.clear();
+	startLine.erase(0, http_str.size()+version.size()+1);
+	statusCode=atoi(std::string(startLine, 0, 3).c_str());
 	startLineProcessed=true;
 }
 
-void ResponseHttp::GetHeadersLine()
+void ResponseHttp::ParseHeadersLine()
 {
 	std::string rnrn("\r\n\r\n");
 	std::vector<char>::iterator message_end(message.begin()+messageSize);
@@ -134,6 +153,8 @@ void ResponseHttp::GetHeadersLine()
 	}
 }
 
+char ToLower(char c) { return std::tolower(c); }
+
 void ResponseHttp::ParseHeaders()
 {
 	std::string rn("\r\n");
@@ -145,8 +166,9 @@ void ResponseHttp::ParseHeaders()
 	{
 		begin_value=headersLine.find(separator, begin_name);
 		if (begin_value==std::string::npos)
-			break;//invalid header
+			throw Error();//invalid header
 		name.assign(headersLine, begin_name, begin_value-begin_name);
+		std::transform(name.begin(), name.end(), name.begin(), ToLower);
 		begin_value+=separator.size();
 		begin_name=headersLine.find(rn, begin_value);
 		value.assign(headersLine, begin_value, begin_name-begin_value);
@@ -156,9 +178,18 @@ void ResponseHttp::ParseHeaders()
 	} while (begin_name!=std::string::npos);
 	headersLineProcessed=true;
 	headersLine.clear();
+	if (Redirection())
+	{
+		std::string loc_str("location");
+		std::map<std::string, std::string>::iterator it(headers.find(loc_str));
+		if (it==headers.end())
+			throw UnsuccessfulServerResponseErr(GetStartLine()+"\n"+GetStringHeaders());
+		location.Set(it->second);
+		std::cout<<loc_str<<": "<<it->second<<"\n";//debug
+	}
 }
 
-void ResponseHttp::GetMessageBody()
+void ResponseHttp::ParseMessageBody()
 {
 	if (recvAllMsgBody)
 		msgBody.insert(msgBody.end(), beginParse, message.begin()+messageSize);
@@ -175,7 +206,7 @@ const std::string ResponseHttp::GetHeaderValue(const std::string& aName) const
 	return res;
 }
 
-void ResponseHttp::Debug()
+const std::string ResponseHttp::GetStringHeaders()
 {
 	std::stringstream ss;
 	ss<<"HTTP/"<<version<<" "<<statusCode<<std::endl;
@@ -185,15 +216,14 @@ void ResponseHttp::Debug()
 		ss<<it->first<<": "<<it->second<<std::endl;
 		it++;
 	}
-	std::cout<<ss.str();
+	return ss.str();
 }
 
 void SessionHttp::SubmitAllRequest(const RequestHttp& request)
 {
-	unsigned total(0);
-	int bytes(0);
 	socket.Connect(ip);
-	int n=request.Get().size();
+	int n(request.Get().size());
+	int total(0), bytes(0);
 	while (total<n)
 	{
 		bytes=socket.Send(request.Get().c_str()+total, n-total);
@@ -225,6 +255,11 @@ bool SessionHttp::ReceiveResponse(ResponseHttp& response)
 	return bytes==0;
 }
 
+void SessionHttp::ConnectionClose()
+{
+	socket.Close();
+}
+
 ResourceInfoSession::ResourceInfoSession(const std::string& aUrl) : addr(aUrl)
 {
 	SessionHttp http;
@@ -237,14 +272,27 @@ ResourceInfoSession::ResourceInfoSession(const std::string& aUrl) : addr(aUrl)
 		http.SubmitAllRequest(head_request);
 		head_response.Init();
 		http.ReceiveAllResponse(head_response);
-		head_response.Debug();
+		http.ConnectionClose();
 		if (head_response.Redirection())
 			addr=head_response.Location();
 	} while (head_response.Redirection());
 	if (!head_response.Success())
-		throw ResourceInfoErr();
-	std::string str_size(head_response.GetHeaderValue("Content-Length"));
-	fileSize=atoi(str_size.c_str());
+		throw UnsuccessfulServerResponseErr(head_response.GetStartLine());
+	std::string hint(head_response.GetHeaderValue("content-length"));
+	contentLength=atol(hint.c_str());
+	std::cout<<"content-length: "<<contentLength<<" bytes ["<<head_response.GetHeaderValue("content-type")<<"]\n";
+	fileName.assign(addr.GetUri().begin()+addr.GetUri().rfind("/")+1, addr.GetUri().end());
+	std::string accept_ranges(head_response.GetHeaderValue("accept-ranges"));
+	if ((!accept_ranges.size()) || (!accept_ranges.compare("none")))
+	{
+		std::cout<<"accept-ranges: none; multithreading off\n";
+		acceptRanges=false;
+	}
+	else
+	{
+		std::cout<<"accept-ranges: "<<accept_ranges<<"; multithreading on\n";
+		acceptRanges=true;
+	}
 }
 
 }

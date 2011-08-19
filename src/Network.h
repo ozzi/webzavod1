@@ -1,13 +1,14 @@
-/*
- * Network.h
- *
- *  Created on: 11.08.2011
- *      Author: outz
- */
+//============================================================================
+// Author      : Alexander Zhukov
+// Version     : 0.0a
+// Copyright   : MIT license
+//============================================================================
+//набор классов реализующих сетевую подсистему
 
 #ifndef NETWORK_H_
 #define NETWORK_H_
 
+#include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -19,6 +20,8 @@
 namespace webzavod {
 
 class InetSockAddr {
+	//преобразуем сетевое имя в sockaddr_in
+	//реализовано только для ipv4
 	sockaddr_in address;
 public:
 	InetSockAddr(){}
@@ -26,9 +29,11 @@ public:
 	~InetSockAddr(){}
 	void SetIpv4Addr(const std::string& aAddr, const std::string& aPort);
 	const sockaddr_in& GetIpv4Addr() const;
+	const std::string GetIpv4AddrStr() const;
 };
 
 class UrlHttp {
+	//класс парсит строку адреса на адрес сокета, имя сайта и путь к ресурсу
 	InetSockAddr address;
 	std::string host;
 	std::string uri;
@@ -36,12 +41,14 @@ public:
 	UrlHttp(){}
 	UrlHttp(const std::string& aUrl);
 	~UrlHttp() {}
+	void Set(const std::string& aUrl);
 	const std::string& GetHost() const { return host; }
 	const std::string& GetUri() const { return uri; }
 	const InetSockAddr& GetAddress() const { return address; }
 };
 
 class RequestHttp {
+	//с помощью этого класса делается строка-запрос к серверу
 	std::string version;
 	std::string uri;
 	std::string host;
@@ -51,12 +58,13 @@ protected:
 		std::stringstream get;
 		get << method << " " << uri << " HTTP/" << version << "\n";
 		get << "Host: " << host << "\n";
-		get << "Accept: */*\n"
+		get << "Accept: */*\n";
+		get << "Referer: http://" << host << "/\n";
 		return get.str();
 	}
 public:
 	RequestHttp() : version("1.0") {}
-	RequestHttp(const UrlHttp& aUrl) : version("1.0"), uri(aUrl.GetUri()), host(aUrl.GetHost())  {}
+	RequestHttp(const UrlHttp& aUrl) : version("1.0"), uri(aUrl.GetUri()), host(aUrl.GetHost()) {}
 	virtual ~RequestHttp() {}
 	void Init(const UrlHttp& aUrl) { uri.assign(aUrl.GetUri()); host.assign(aUrl.GetHost()); }
 	virtual const std::string Get() const { return _get("OPTIONS")+"\n"; }
@@ -83,34 +91,35 @@ class PartialGETRequestHttp: public GETRequestHttp {
 public:
 	PartialGETRequestHttp(){}
 	PartialGETRequestHttp(const UrlHttp& aUrl, const size_t aRange, const size_t aBytes)
-		: GETRequestHttp(aUrl), beginRange(aRange), endRange(aRange + aBytes) {}
+		: GETRequestHttp(aUrl), beginRange(aRange), endRange(aRange + aBytes -1) {}
 	virtual ~PartialGETRequestHttp() {}
 	virtual const std::string Get() const
 	{
-		std::stringstream get(GETRequestHttp::Get());
-		get << "Range: bytes=" << beginRange << "-" << endRange << "\n\n";
+		std::stringstream get;
+		get << _get("GET") << "Range: bytes=" << beginRange << "-" << endRange << "\n\n";
 		return get.str();
 	}
 };
 
 class ResponseHttp {
-	std::vector<char> message;
-	std::string startLine;
-	std::string headersLine;
-	std::map<std::string, std::string> headers;
-	std::vector<char> msgBody;
-	size_t messageSize;
-	std::string version;
-	bool startLineProcessed;
-	bool headersLineProcessed;
-	bool recvAllMsgBody;
+	//класс парсит сообщение полученное от сервера
+	std::vector<char> message;//raw data
+	std::string startLine;//стартовая строка
+	std::string headersLine;//строка заголовков
+	std::map<std::string, std::string> headers;//заголовки в удобной форме
+	std::vector<char> msgBody;//сами запрошенные данные
+	size_t messageSize;//размер полученного сообщения message
+	std::string version;//версия протокола http сервера
+	bool startLineProcessed;//стартовая строка обработана
+	bool headersLineProcessed;//заголовки обработаны
+	bool recvAllMsgBody;//флаг, определяющий, принимать ли файл сразу, либо по кускам
 	int statusCode;
-	UrlHttp location;
-	std::vector<char>::iterator beginParse;
-	void GetStartLine();
-	void GetHeadersLine();
-	void ParseHeaders();
-	void GetMessageBody();
+	UrlHttp location;//при перенаправлении здесь новый адрес ресурса
+	std::vector<char>::iterator beginParse;//указатель на нераспарсенные данные
+	void ParseStartLine();//парсим стартовую строку
+	void ParseHeadersLine();//парсим строку с заголовками
+	void ParseHeaders();//создаем карту заголовков
+	void ParseMessageBody();//парсим тело сообщения (файл)
 
 public:
 	ResponseHttp(const size_t aBufferSize = 4096) :
@@ -129,20 +138,24 @@ public:
 	void SetRecvAllDataOn() { recvAllMsgBody=true; }
 	void SetRecvAllDataOff() { recvAllMsgBody=false; }
 	void ParseRecvMessage(size_t aBytes);
-	void Debug();
+	const std::string GetStringHeaders();
+	const std::string& GetStartLine() {return startLine; }
 };
 
 class Socket {
+	//небольшая обертка над системными вызовами socket
 	int id;
 public:
 	Socket();
 	~Socket();
-	int Connect(const InetSockAddr& ip);
+	void Connect(const InetSockAddr& ip);
 	int Send(const char* aData, const size_t aSize);
 	int Receive(char* aData, const size_t aSize);
+	void Close();
 };
 
 class SessionHttp {
+	//класс реализующий общение с сервером по протоколу http
 	InetSockAddr ip;
 	std::string base;
 	Socket socket;
@@ -154,17 +167,22 @@ public:
 	void ReceiveAllResponse(ResponseHttp& response);
 	bool SubmitRequest(const RequestHttp& request);
 	bool ReceiveResponse(ResponseHttp& response);
+	void ConnectionClose();
 };
 
 class ResourceInfoSession {
+	//класс устанавливающий первоначальное соединение с сервером
+	//и с помощью запросов HEAD устанавливающий сведения о запрашиваемом ресурсе
 	UrlHttp addr;
-	size_t fileSize;
+	size_t contentLength;
 	bool acceptRanges;
+	std::string fileName;
 public:
 	ResourceInfoSession(const std::string& aAddr);
-	const size_t GetFileSize() const { return fileSize;	}
+	const size_t GetFileSize() const { return contentLength; }//возвращает размер файла, хранящегося на сервере
+	const std::string& GetFileName() const { return fileName; }
 	const UrlHttp& GetAddress() const { return addr; }
-	const bool AcceptRanges() const { return acceptRanges; }
+	const bool AcceptRanges() const { return acceptRanges; }//возможна ли многопотоковая закачка
 };
 
 }

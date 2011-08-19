@@ -1,9 +1,8 @@
-/*
- * Thread.cpp
- *
- *  Created on: 11.08.2011
- *      Author: outz
- */
+//============================================================================
+// Author      : Alexander Zhukov
+// Version     : 0.0a
+// Copyright   : MIT license
+//============================================================================
 
 #include "Thread.h"
 #include "Error.h"
@@ -14,9 +13,12 @@ namespace webzavod
 void Thread::Start(size_t aOffset, size_t aBytes)
 {
 	offset=aOffset;
-	bytes=aBytes;
-	if (pthread_create(&id, NULL, EntryPoint, this))
-		throw PthreadCreateErr();
+	total=aBytes;
+	error=false;
+	received=0;
+	int err(pthread_create(&id, NULL, EntryPoint, this));
+	if (err)
+		throw PthreadCreateErr(err);
 }
 
 void* Thread::EntryPoint(void * aParam)
@@ -29,14 +31,26 @@ void* Thread::EntryPoint(void * aParam)
 
 void* Thread::Worker()
 {
-	SessionHttp http(addr);
-	http.SubmitAllRequest(PartialGETRequestHttp(addr, offset, bytes));
-	ResponseHttp res(bufferSize);
-	long position(offset);
-	while (!http.ReceiveResponse(res))
+	try {
+		SessionHttp http(addr);
+		http.SubmitAllRequest(PartialGETRequestHttp(addr, offset, total));
+		ResponseHttp res;
+		long position(offset);
+		std::cout<<"[thread "<<id<<"] Receive data begins...\n";
+		while (!http.ReceiveResponse(res))
+		{
+			output->Write(res.GetMsgBody(), res.GetMsgBodySize(), position);
+			position+=res.GetMsgBodySize();
+			received+=res.GetMsgBodySize();
+		}
+		if (received!=total)
+			throw TransactionCompletedIncorrectlyErr(id, received, total);
+		std::cout<<"[thread "<<id<<"] Receive data is successfully completed.\n";
+	}
+	catch (webzavod::Error &err)
 	{
-		output.Write(res.GetMsgBody(), res.GetMsgBodySize(), position);
-		position+=res.GetMsgBodySize();
+		std::cout<<err.Print();
+		error=true;
 	}
 	id=0;
 	return NULL;
